@@ -259,6 +259,7 @@ fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Reque
     let method = request.method().clone();
     let url = request.url();
     let (body, status) = if method == Method::Get && url == "/api/update-status" {
+        let progress = crate::updater::get_update_progress();
         let resp = match crate::updater::check_for_updates(false) {
             Ok(info) => serde_json::json!({
                 "ok": true,
@@ -270,16 +271,19 @@ fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Reque
                 "release_url": info.release_url,
                 "asset_size": info.asset_size,
                 "published_at": info.published_at,
+                "progress": progress,
             }),
             Err(e) => serde_json::json!({
                 "ok": false,
                 "update_available": false,
-                "current_version": crate::updater::CURRENT_VERSION,
+                "current_version": crate::updater::current_version(),
                 "error": e,
+                "progress": progress,
             }),
         };
         (resp, StatusCode(200))
     } else if method == Method::Post && url == "/api/check-update-now" {
+        let progress = crate::updater::get_update_progress();
         let resp = match crate::updater::check_for_updates(true) {
             Ok(info) => serde_json::json!({
                 "ok": true,
@@ -291,27 +295,23 @@ fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Reque
                 "release_url": info.release_url,
                 "asset_size": info.asset_size,
                 "published_at": info.published_at,
+                "progress": progress,
             }),
             Err(e) => serde_json::json!({
                 "ok": false,
                 "update_available": false,
-                "current_version": crate::updater::CURRENT_VERSION,
+                "current_version": crate::updater::current_version(),
                 "error": e,
+                "progress": progress,
             }),
         };
         (resp, StatusCode(200))
     } else if method == Method::Post && url == "/api/install-update" {
-        match crate::updater::apply_update() {
-            Ok(msg) => {
-                std::thread::spawn(|| {
-                    std::thread::sleep(std::time::Duration::from_millis(1500));
-                    let _ = crate::updater::restart_application();
-                });
-                (
-                    serde_json::json!({ "ok": true, "message": msg, "restarting": true }),
-                    StatusCode(200),
-                )
-            }
+        match crate::updater::start_background_update() {
+            Ok(()) => (
+                serde_json::json!({ "ok": true, "message": "Update process started", "restarting": false }),
+                StatusCode(200),
+            ),
             Err(e) => (
                 serde_json::json!({ "ok": false, "message": e, "restarting": false }),
                 StatusCode(500),

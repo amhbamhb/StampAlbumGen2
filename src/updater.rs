@@ -10,10 +10,61 @@ pub const REPO_NAME: &str = "StampAlbumGen2";
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CACHE_TTL_SECS: u64 = 6 * 3600; // 6 hours
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateState {
+    Idle,
+    Downloading,
+    Verifying,
+    Replacing,
+    Restarting,
+    Failed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateProgressStatus {
+    pub state: UpdateState,
+    pub message: String,
+    pub percent: Option<u8>,
+    pub downloaded_bytes: u64,
+    pub total_bytes: Option<u64>,
+    pub error: Option<String>,
+}
+
+static UPDATE_PROGRESS: LazyLock<RwLock<UpdateProgressStatus>> = LazyLock::new(|| {
+    RwLock::new(UpdateProgressStatus {
+        state: UpdateState::Idle,
+        message: String::new(),
+        percent: None,
+        downloaded_bytes: 0,
+        total_bytes: None,
+        error: None,
+    })
+});
+
+pub fn get_update_progress() -> UpdateProgressStatus {
+    UPDATE_PROGRESS
+        .read()
+        .map(|g| g.clone())
+        .unwrap_or_else(|_| UpdateProgressStatus {
+            state: UpdateState::Idle,
+            message: String::new(),
+            percent: None,
+            downloaded_bytes: 0,
+            total_bytes: None,
+            error: None,
+        })
+}
+
+pub fn set_update_progress(status: UpdateProgressStatus) {
+    if let Ok(mut g) = UPDATE_PROGRESS.write() {
+        *g = status;
+    }
+}
+
 /// Returns the active version of the application, allowing override via STAMP_ALBUM_CURRENT_VERSION for testing.
 pub fn current_version() -> String {
-    std::env::var("STAMP_ALBUM_CURRENT_VERSION")
-        .unwrap_or_else(|_| CURRENT_VERSION.to_string())
+    std::env::var("STAMP_ALBUM_CURRENT_VERSION").unwrap_or_else(|_| CURRENT_VERSION.to_string())
 }
 
 /// Returns the release API endpoint, allowing override via STAMP_ALBUM_UPDATE_URL for testing.
@@ -125,7 +176,10 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
 
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(15))
-            .user_agent(format!("StampAlbumGen2/{} (stampalbumgenerator2.com)", cur_ver))
+            .user_agent(format!(
+                "StampAlbumGen2/{} (stampalbumgenerator2.com)",
+                cur_ver
+            ))
             .build()
             .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
 
@@ -206,143 +260,312 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
     Ok(info)
 }
 
-/// Downloads, checksum-verifies, and atomically self-replaces the running executable.
-pub fn apply_update() -> Result<String, String> {
+/// Starts updating the application in a background thread if not already running.
+pub fn start_background_update() -> Result<(), String> {
+    let progress = get_update_progress();
+    if matches!(
+        progress.state,
+        UpdateState::Downloading
+            | UpdateState::Verifying
+            | UpdateState::Replacing
+            | UpdateState::Restarting
+    ) {
+        return Ok(());
+    }
+
+    set_update_progress(UpdateProgressStatus {
+        state: UpdateState::Downloading,
+        message: "Initiating update download...".to_string(),
+        percent: Some(0),
+        downloaded_bytes: 0,
+        total_bytes: None,
+        error: None,
+    });
+
+    std::thread::spawn(move || {
+        if let Err(e) = run_update_pipeline(true) {
+            log::error!("Background update failed: {}", e);
+            set_update_progress(UpdateProgressStatus {
+                state: UpdateState::Failed,
+                message: format!("Update failed: {e}"),
+                percent: None,
+                downloaded_bytes: 0,
+                total_bytes: None,
+                error: Some(e),
+            });
+        }
+    });
+
+    Ok(())
+}
+
+/// Executes download, checksum verification, atomic binary replacement, and optionally triggers restart.
+pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
     let update_info = check_for_updates(true)?;
 
     if !update_info.update_available {
-        return Ok(format!(
+        let msg = format!(
             "Already running the latest version (v{}).",
             current_version()
-        ));
+        );
+        set_update_progress(UpdateProgressStatus {
+            state: UpdateState::Idle,
+            message: msg.clone(),
+            percent: Some(100),
+            downloaded_bytes: 0,
+            total_bytes: None,
+            error: None,
+        });
+        return Ok(msg);
     }
 
-    let download_url = update_info
-        .download_url
-        .as_deref()
-        .ok_or_else(|| format!("No matching binary asset ({}) found in release.", target_binary_name()))?;
+    let download_url = update_info.download_url.as_deref().ok_or_else(|| {
+        format!(
+            "No matching binary asset ({}) found in release.",
+            target_binary_name()
+        )
+    })?;
 
-    let sha256_url = update_info
-        .sha256_url
-        .as_deref()
-        .ok_or_else(|| format!("No SHA256 checksum asset ({}) found in release.", target_checksum_name()))?;
+    let sha256_url = update_info.sha256_url.as_deref().ok_or_else(|| {
+        format!(
+            "No SHA256 checksum asset ({}) found in release.",
+            target_checksum_name()
+        )
+    })?;
 
-    // Perform download and replacement in a worker thread.
     let target_version = update_info.latest_version.clone();
     let cur_ver = current_version();
     let dl_url = download_url.to_string();
     let chk_url = sha256_url.to_string();
+    let asset_size = update_info.asset_size;
 
-    let worker = std::thread::spawn(move || -> Result<String, String> {
-        let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(180))
-            .user_agent(format!("StampAlbumGen2/{} (updater)", cur_ver))
-            .build()
-            .map_err(|e| format!("Failed to create download client: {e}"))?;
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(180))
+        .user_agent(format!("StampAlbumGen2/{} (updater)", cur_ver))
+        .build()
+        .map_err(|e| format!("Failed to create download client: {e}"))?;
 
-        info!("Downloading checksum from {}", chk_url);
-        let chk_resp = client
-            .get(&chk_url)
-            .send()
-            .map_err(|e| format!("Failed to download checksum file: {e}"))?;
+    info!("Downloading checksum from {}", chk_url);
+    let chk_resp = client
+        .get(&chk_url)
+        .send()
+        .map_err(|e| format!("Failed to download checksum file: {e}"))?;
 
-        let chk_text = chk_resp
-            .text()
-            .map_err(|e| format!("Failed to read checksum response: {e}"))?;
+    let chk_text = chk_resp
+        .text()
+        .map_err(|e| format!("Failed to read checksum response: {e}"))?;
 
-        let expected_sha256 = chk_text
-            .split_whitespace()
-            .next()
-            .ok_or_else(|| "Empty checksum file".to_string())?
-            .to_lowercase();
+    let expected_sha256 = chk_text
+        .split_whitespace()
+        .next()
+        .ok_or_else(|| "Empty checksum file".to_string())?
+        .to_lowercase();
 
-        if expected_sha256.len() != 64 {
-            return Err(format!(
-                "Invalid SHA256 format in checksum file (got {} characters, expected 64).",
-                expected_sha256.len()
-            ));
-        }
+    if expected_sha256.len() != 64 {
+        return Err(format!(
+            "Invalid SHA256 format in checksum file (got {} characters, expected 64).",
+            expected_sha256.len()
+        ));
+    }
 
-        info!("Downloading updated binary from {}", dl_url);
-        let mut bin_resp = client
-            .get(&dl_url)
-            .send()
-            .map_err(|e| format!("Failed to download update binary: {e}"))?;
+    info!("Downloading updated binary from {}", dl_url);
+    let mut bin_resp = client
+        .get(&dl_url)
+        .send()
+        .map_err(|e| format!("Failed to download update binary: {e}"))?;
 
-        if !bin_resp.status().is_success() {
-            return Err(format!("Download failed with HTTP {}", bin_resp.status()));
-        }
+    if !bin_resp.status().is_success() {
+        return Err(format!("Download failed with HTTP {}", bin_resp.status()));
+    }
 
-        // Write downloaded payload to a temporary file while hashing
-        let mut temp_file = tempfile::Builder::new()
-            .prefix("stamp_album_gen2_update_")
-            .tempfile()
-            .map_err(|e| format!("Failed to create temp file for update: {e}"))?;
+    let total_bytes = bin_resp.content_length().or(asset_size);
 
-        let mut hasher = Sha256::new();
-        let mut buffer = [0u8; 65536];
-
-        use std::io::{Read, Write};
-        loop {
-            let n = bin_resp
-                .read(&mut buffer)
-                .map_err(|e| format!("Failed reading download stream: {e}"))?;
-            if n == 0 {
-                break;
-            }
-            hasher.update(&buffer[..n]);
-            temp_file
-                .write_all(&buffer[..n])
-                .map_err(|e| format!("Failed writing update to temp file: {e}"))?;
-        }
-
-        temp_file
-            .flush()
-            .map_err(|e| format!("Failed flushing update temp file: {e}"))?;
-
-        let hash_bytes = hasher.finalize();
-        let mut computed_sha256 = String::with_capacity(64);
-        for b in hash_bytes {
-            let _ = FmtWrite::write_fmt(&mut computed_sha256, format_args!("{:02x}", b));
-        }
-
-        if computed_sha256 != expected_sha256 {
-            return Err(format!(
-                "Checksum verification failed! Expected: {}, computed: {}. Aborting update.",
-                expected_sha256, computed_sha256
-            ));
-        }
-
-        info!("Checksum verified successfully ({})", computed_sha256);
-
-        // Perform atomic self replacement
-        self_replace::self_replace(temp_file.path())
-            .map_err(|e| format!("Failed to replace executable: {e}"))?;
-
-        info!("Successfully replaced binary with v{}", target_version);
-        Ok(format!("Successfully updated to v{target_version}"))
+    set_update_progress(UpdateProgressStatus {
+        state: UpdateState::Downloading,
+        message: if let Some(tot) = total_bytes {
+            format!(
+                "Downloading update (0.0 MB / {:.1} MB)...",
+                tot as f64 / 1_048_576.0
+            )
+        } else {
+            "Downloading update binary...".to_string()
+        },
+        percent: Some(0),
+        downloaded_bytes: 0,
+        total_bytes,
+        error: None,
     });
 
-    worker
-        .join()
-        .map_err(|_| "Update worker thread panicked".to_string())?
+    let mut temp_file = tempfile::Builder::new()
+        .prefix("stamp_album_gen2_update_")
+        .tempfile()
+        .map_err(|e| format!("Failed to create temp file for update: {e}"))?;
+
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 65536];
+    let mut downloaded_bytes: u64 = 0;
+    let mut last_progress_report = Instant::now();
+
+    use std::io::{Read, Write};
+    loop {
+        let n = bin_resp
+            .read(&mut buffer)
+            .map_err(|e| format!("Failed reading download stream: {e}"))?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buffer[..n]);
+        temp_file
+            .write_all(&buffer[..n])
+            .map_err(|e| format!("Failed writing update to temp file: {e}"))?;
+        downloaded_bytes += n as u64;
+
+        if last_progress_report.elapsed() >= Duration::from_millis(200) {
+            last_progress_report = Instant::now();
+            let percent = total_bytes.map(|tot| {
+                if tot > 0 {
+                    ((downloaded_bytes as f64 / tot as f64) * 100.0).min(99.0) as u8
+                } else {
+                    0
+                }
+            });
+            let msg = if let Some(tot) = total_bytes {
+                format!(
+                    "Downloading update: {:.1} MB of {:.1} MB ({}%)",
+                    downloaded_bytes as f64 / 1_048_576.0,
+                    tot as f64 / 1_048_576.0,
+                    percent.unwrap_or(0)
+                )
+            } else {
+                format!(
+                    "Downloading update: {:.1} MB downloaded",
+                    downloaded_bytes as f64 / 1_048_576.0
+                )
+            };
+            set_update_progress(UpdateProgressStatus {
+                state: UpdateState::Downloading,
+                message: msg,
+                percent,
+                downloaded_bytes,
+                total_bytes,
+                error: None,
+            });
+        }
+    }
+
+    temp_file
+        .flush()
+        .map_err(|e| format!("Failed flushing update temp file: {e}"))?;
+
+    set_update_progress(UpdateProgressStatus {
+        state: UpdateState::Verifying,
+        message: "Verifying SHA256 checksum...".to_string(),
+        percent: Some(99),
+        downloaded_bytes,
+        total_bytes,
+        error: None,
+    });
+
+    let hash_bytes = hasher.finalize();
+    let mut computed_sha256 = String::with_capacity(64);
+    for b in hash_bytes {
+        let _ = FmtWrite::write_fmt(&mut computed_sha256, format_args!("{:02x}", b));
+    }
+
+    if computed_sha256 != expected_sha256 {
+        return Err(format!(
+            "Checksum verification failed! Expected: {}, computed: {}. Aborting update.",
+            expected_sha256, computed_sha256
+        ));
+    }
+
+    info!("Checksum verified successfully ({})", computed_sha256);
+
+    set_update_progress(UpdateProgressStatus {
+        state: UpdateState::Replacing,
+        message: "Installing update...".to_string(),
+        percent: Some(99),
+        downloaded_bytes,
+        total_bytes,
+        error: None,
+    });
+
+    self_replace::self_replace(temp_file.path())
+        .map_err(|e| format!("Failed to replace executable: {e}"))?;
+
+    info!("Successfully replaced binary with v{}", target_version);
+
+    if trigger_restart {
+        set_update_progress(UpdateProgressStatus {
+            state: UpdateState::Restarting,
+            message: format!("Successfully updated to v{target_version}! Restarting..."),
+            percent: Some(100),
+            downloaded_bytes,
+            total_bytes,
+            error: None,
+        });
+
+        // Give the UI a moment to read the restarting status
+        std::thread::sleep(Duration::from_millis(1500));
+        let _ = restart_application();
+    }
+
+    Ok(format!("Successfully updated to v{target_version}"))
 }
 
-/// Spawns the updated executable and exits the current process.
+/// Downloads, checksum-verifies, and atomically self-replaces the running executable synchronously.
+pub fn apply_update() -> Result<String, String> {
+    run_update_pipeline(false)
+}
+
+/// Spawns the updated executable and exits the current process cleanly with socket detachment.
 pub fn restart_application() -> Result<(), String> {
     let current_exe = std::env::current_exe()
         .map_err(|e| format!("Could not determine current executable path: {e}"))?;
 
     let args: Vec<_> = std::env::args_os().skip(1).collect();
 
-    info!("Spawning restarted process: {:?} with args {:?}", current_exe, args);
+    info!(
+        "Scheduling application restart for {:?} with args {:?}",
+        current_exe, args
+    );
 
-    std::process::Command::new(current_exe)
-        .args(args)
-        .spawn()
-        .map_err(|e| format!("Failed to spawn updated application process: {e}"))?;
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let exe_str = current_exe.to_string_lossy();
+        let mut cmd_line = format!("ping 127.0.0.1 -n 3 >nul & start \"\" \"{}\"", exe_str);
+        for arg in args {
+            let arg_str = arg.to_string_lossy();
+            if arg_str.contains(' ') {
+                cmd_line.push_str(&format!(" \"{}\"", arg_str));
+            } else {
+                cmd_line.push_str(&format!(" {}", arg_str));
+            }
+        }
+        let _ = std::process::Command::new("cmd")
+            .args(["/c", &cmd_line])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .spawn();
+    }
 
-    // Clean exit
+    #[cfg(not(target_os = "windows"))]
+    {
+        let exe_str = current_exe.to_string_lossy().to_string();
+        let mut sh_script = "sleep 2; exec \"$0\"".to_string();
+        let mut sh_args = vec![exe_str];
+        for (i, arg) in args.into_iter().enumerate() {
+            sh_script.push_str(&format!(" \"${}\"", i + 1));
+            sh_args.push(arg.to_string_lossy().to_string());
+        }
+        let _ = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&sh_script)
+            .args(&sh_args)
+            .spawn();
+    }
+
+    // Clean exit of the existing process so ports and files are freed before child launches
     std::process::exit(0);
 }
 

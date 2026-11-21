@@ -121,8 +121,9 @@ pub(super) fn render_update_dialog_html() -> &'static str {
         </div>
         <div id='updateStatusBox' style='display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;color:#166534;font-size:13px;'>
             <div id='updateStatusMsg' style='display:flex;align-items:center;gap:8px;'>
-                <span>⏳</span> <span>Downloading update and verifying SHA256 checksum...</span>
+                <span>⏳</span> <span>Starting update...</span>
             </div>
+            <progress id='updateProgressBar' value='0' max='100' style='display:none;width:100%;height:10px;border-radius:5px;overflow:hidden;margin-top:10px;'></progress>
         </div>
         <div id='updateActionRow' style='display:flex;gap:10px;justify-content:flex-end;margin-top:6px;'>
             <button id='btnRemindLater' type='button' class='neutral' onclick='closeUpdateDialog()' style='padding:6px 14px;font-size:13px;border-radius:4px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;'>Remind Me Later</button>
@@ -194,26 +195,80 @@ function executeApplicationUpdate() {
 
     var statusBox = document.getElementById('updateStatusBox');
     var statusMsg = document.getElementById('updateStatusMsg');
+    var progressBar = document.getElementById('updateProgressBar');
     if (statusBox) statusBox.style.display = 'block';
-    if (statusMsg) statusMsg.innerHTML = '<span>⏳</span> <span>Downloading update from GitHub and verifying SHA256 checksum...</span>';
+    if (progressBar) {
+        progressBar.style.display = 'none';
+        progressBar.value = 0;
+    }
+    if (statusMsg) statusMsg.innerHTML = '<span>⏳</span> <span>Starting update...</span>';
 
-    fetch('/api/install-update', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.ok) {
-                if (statusMsg) statusMsg.innerHTML = '<span>✅</span> <span>' + data.message + ' Restarting application...</span>';
-                pollAndReloadAfterRestart();
-            } else {
-                if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">Update failed: ' + (data.message || 'unknown error') + '</span>';
-                if (btn) btn.disabled = false;
-                if (btnLater) btnLater.disabled = false;
-            }
-        })
-        .catch(function(err) {
-            if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">Request failed: ' + err + '</span>';
+    fetch('/api/install-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.ok) {
+            if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">Update failed to start: ' + (data.message || 'unknown error') + '</span>';
             if (btn) btn.disabled = false;
             if (btnLater) btnLater.disabled = false;
-        });
+            return;
+        }
+        pollUpdateProgress();
+    })
+    .catch(function(err) {
+        if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">Request failed: ' + err + '</span>';
+        if (btn) btn.disabled = false;
+        if (btnLater) btnLater.disabled = false;
+    });
+}
+
+function pollUpdateProgress() {
+    var statusMsg = document.getElementById('updateStatusMsg');
+    var progressBar = document.getElementById('updateProgressBar');
+    var btn = document.getElementById('btnDoUpdate');
+    var btnLater = document.getElementById('btnRemindLater');
+
+    var pollInterval = setInterval(function() {
+        fetch('/api/update-status')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var p = data && data.progress;
+                if (!p) return;
+
+                if (p.state === 'downloading') {
+                    if (progressBar) {
+                        progressBar.style.display = 'block';
+                        if (typeof p.percent === 'number') {
+                            progressBar.value = p.percent;
+                        }
+                    }
+                    if (statusMsg) statusMsg.innerHTML = '<span>⏳</span> <span>' + (p.message || 'Downloading update from GitHub...') + '</span>';
+                } else if (p.state === 'verifying') {
+                    if (progressBar) progressBar.style.display = 'none';
+                    if (statusMsg) statusMsg.innerHTML = '<span>🔍</span> <span>Verifying SHA256 checksum...</span>';
+                } else if (p.state === 'replacing') {
+                    if (progressBar) progressBar.style.display = 'none';
+                    if (statusMsg) statusMsg.innerHTML = '<span>📦</span> <span>Installing update...</span>';
+                } else if (p.state === 'restarting') {
+                    clearInterval(pollInterval);
+                    if (progressBar) progressBar.style.display = 'none';
+                    if (statusMsg) statusMsg.innerHTML = '<span>✅</span> <span>' + (p.message || 'Update installed! Restarting application...') + '</span>';
+                    pollAndReloadAfterRestart();
+                } else if (p.state === 'failed') {
+                    clearInterval(pollInterval);
+                    if (progressBar) progressBar.style.display = 'none';
+                    if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">' + (p.error || p.message || 'Update failed') + '</span>';
+                    if (btn) btn.disabled = false;
+                    if (btnLater) btnLater.disabled = false;
+                }
+            })
+            .catch(function(err) {
+                // Ignore transient network errors while polling
+            });
+    }, 500);
 }
 
 function pollAndReloadAfterRestart() {
@@ -243,4 +298,3 @@ if (document.readyState === 'loading') {
     checkAppUpdateStatus();
 }
 "#;
-
