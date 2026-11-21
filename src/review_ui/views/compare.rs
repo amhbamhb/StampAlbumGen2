@@ -1,7 +1,8 @@
 use super::{
-    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS, MatcherPayload, UPDATE_CLIENT_JS,
-    render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html, render_update_dialog_html,
+    BACKEND_NOT_RESPONDING_MESSAGE, CONFIG_STALENESS_CLIENT_JS, FOOTER_YEAR_UPDATE_JS,
+    MatcherPayload, UPDATE_CLIENT_JS, render_app_footer_html, render_config_editor_assets,
+    render_config_staleness_dialog_html, render_footer_year_script, render_reconnect_banner_html,
+    render_runtime_log_panel_html, render_update_dialog_html,
 };
 
 use super::compare_assets::{
@@ -317,4 +318,9 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
         .replace("{config_editor_assets}", &render_config_editor_assets())
         .replace("{update_dialog_html}", render_update_dialog_html())
         .replace("{update_client_js}", UPDATE_CLIENT_JS)
+        .replace(
+            "{config_staleness_dialog_html}",
+            render_config_staleness_dialog_html(),
+        )
+        .replace("{config_staleness_client_js}", CONFIG_STALENESS_CLIENT_JS)
 }

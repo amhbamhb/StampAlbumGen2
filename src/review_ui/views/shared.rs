@@ -298,3 +298,181 @@ if (document.readyState === 'loading') {
     checkAppUpdateStatus();
 }
 "#;
+
+pub(super) fn render_config_staleness_dialog_html() -> &'static str {
+    r#"<dialog id='configStaleDialog' class='configStaleDialog' style='padding:22px;border-radius:8px;border:1px solid #cbd5e1;max-width:580px;width:92%;box-sizing:border-box;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);font-family:inherit;'>
+    <div style='display:flex;flex-direction:column;gap:14px;'>
+        <div style='display:flex;justify-content:space-between;align-items:center;'>
+            <h3 style='margin:0;color:#1e3a8a;display:flex;align-items:center;gap:8px;font-size:17px;'>
+                <span>⚙️</span> New Configuration Settings Available
+            </h3>
+            <button type='button' onclick='closeConfigStalenessDialog()' style='background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1;'>&times;</button>
+        </div>
+
+        <div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;display:flex;align-items:center;gap:12px;'>
+            <div style='font-size:28px;'>📋</div>
+            <div>
+                <strong style='color:#166534;font-size:14px;' id='configStaleTitle'>New Settings Available</strong>
+                <div style='font-size:12px;color:#15803d;margin-top:2px;' id='configStaleSubtext'>Your config.toml is missing options added in this version.</div>
+            </div>
+        </div>
+
+        <div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;'>
+            <strong style='font-size:13px;color:#1e293b;display:flex;align-items:center;gap:6px;'>
+                <span>🔒</span> Why the app never modifies config.toml automatically on launch
+            </strong>
+            <p style='margin:6px 0 0 0;font-size:12px;color:#475569;line-height:1.45;'>
+                StampAlbumGen2 treats your <code>config.toml</code> as your personal file. It intentionally avoids silently editing or overwriting it on startup so that your custom album directories, margins, fonts, and personal preferences are never erased or altered.
+            </p>
+        </div>
+
+        <div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;'>
+            <strong style='font-size:13px;color:#1e293b;display:flex;align-items:center;gap:6px;'>
+                <span>💡</span> Built-in Defaults Apply Automatically
+            </strong>
+            <p style='margin:6px 0 0 0;font-size:12px;color:#475569;line-height:1.45;'>
+                You do not need to do anything. Even though <code>config.toml</code> does not list these new options, StampAlbumGen2 automatically applies built-in default values in memory. The app runs completely normally without any configuration loss.
+            </p>
+        </div>
+
+        <details style='font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#fff;'>
+            <summary style='cursor:pointer;font-weight:600;color:#2b4c7e;'>
+                <span id='configMissingCountSummary'>View missing options</span>
+                <span style='font-weight:normal;color:#64748b;font-size:11px;'>(click to expand)</span>
+            </summary>
+            <div id='configMissingKeysList' style='margin-top:8px;max-height:120px;overflow-y:auto;font-family:monospace;font-size:11px;color:#334155;background:#f1f5f9;padding:8px;border-radius:4px;word-break:break-all;'></div>
+        </details>
+
+        <div id='configUpgradeStatusBox' style='display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;color:#166534;font-size:13px;'>
+            <div id='configUpgradeStatusMsg'></div>
+        </div>
+
+        <div style='display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap;'>
+            <button type='button' class='neutral' onclick='dismissConfigStalenessDialog(true)' style='padding:7px 14px;font-size:13px;border-radius:4px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;'>Keep Current Settings &amp; Don't Ask Again</button>
+            <button type='button' class='secondary' onclick='openConfigEditorFromStaleness()' style='padding:7px 14px;font-size:13px;border-radius:4px;border:1px solid #2b4c7e;color:#2b4c7e;background:#fff;font-weight:600;cursor:pointer;'>Open Config Editor</button>
+            <button id='btnDoConfigUpgrade' type='button' class='primary' onclick='executeConfigUpgrade()' style='padding:7px 14px;font-size:13px;border-radius:4px;background:#2563eb;color:#fff;border:1px solid #1d4ed8;font-weight:600;cursor:pointer;'>Update config.toml Now</button>
+        </div>
+    </div>
+</dialog>"#
+}
+
+pub(super) const CONFIG_STALENESS_CLIENT_JS: &str = r#"
+function checkConfigStalenessStatus() {
+    fetch('/api/config-staleness')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.stale) {
+                window._configStalenessInfo = data;
+                var badge = document.getElementById('btnConfigStaleBadge');
+                if (badge) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = '⚙️ ' + data.missing_count + ' New Settings Available';
+                }
+                var dismissedKey = 'stamp_dismissed_config_staleness';
+                var dismissedVal = data.current_version + '_' + data.missing_count;
+                var alreadyDismissed = false;
+                try {
+                    alreadyDismissed = (localStorage.getItem(dismissedKey) === dismissedVal);
+                } catch (e) {}
+
+                if (!alreadyDismissed) {
+                    openConfigStalenessDialog();
+                }
+            }
+        })
+        .catch(function() {
+            // Silently ignore errors
+        });
+}
+
+function openConfigStalenessDialog() {
+    var dialog = document.getElementById('configStaleDialog');
+    if (!dialog) return;
+    var data = window._configStalenessInfo;
+    if (data) {
+        var count = data.missing_count || (data.missing_keys ? data.missing_keys.length : 0);
+        var title = document.getElementById('configStaleTitle');
+        if (title) title.textContent = count + ' New Setting' + (count === 1 ? '' : 's') + ' Available';
+        var subtext = document.getElementById('configStaleSubtext');
+        if (subtext) subtext.textContent = 'Your config.toml is missing ' + count + ' option(s) added in v' + (data.current_version || '') + '.';
+        var summary = document.getElementById('configMissingCountSummary');
+        if (summary) summary.textContent = 'View missing options (' + count + ')';
+        var list = document.getElementById('configMissingKeysList');
+        if (list && data.missing_keys) {
+            list.textContent = data.missing_keys.join(', ');
+        }
+    }
+    if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+    } else {
+        dialog.style.display = 'block';
+    }
+}
+
+function closeConfigStalenessDialog() {
+    var dialog = document.getElementById('configStaleDialog');
+    if (!dialog) return;
+    if (typeof dialog.close === 'function') {
+        dialog.close();
+    } else {
+        dialog.style.display = 'none';
+    }
+}
+
+function dismissConfigStalenessDialog(dontAskAgain) {
+    if (dontAskAgain && window._configStalenessInfo) {
+        var data = window._configStalenessInfo;
+        var dismissedKey = 'stamp_dismissed_config_staleness';
+        var dismissedVal = data.current_version + '_' + data.missing_count;
+        try {
+            localStorage.setItem(dismissedKey, dismissedVal);
+        } catch (e) {}
+    }
+    closeConfigStalenessDialog();
+}
+
+function openConfigEditorFromStaleness() {
+    closeConfigStalenessDialog();
+    if (typeof openConfigEditor === 'function') {
+        openConfigEditor();
+    }
+}
+
+function executeConfigUpgrade() {
+    var btn = document.getElementById('btnDoConfigUpgrade');
+    if (btn) btn.disabled = true;
+
+    var statusBox = document.getElementById('configUpgradeStatusBox');
+    var statusMsg = document.getElementById('configUpgradeStatusMsg');
+    if (statusBox) statusBox.style.display = 'block';
+    if (statusMsg) statusMsg.innerHTML = '<span>⏳</span> <span>Updating config.toml and creating timestamped backup...</span>';
+
+    fetch('/api/config-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.ok) {
+            if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">' + (data.message || 'Upgrade failed') + '</span>';
+            if (btn) btn.disabled = false;
+            return;
+        }
+        if (statusMsg) statusMsg.innerHTML = '<span>✅</span> <span>' + (data.message || 'Successfully updated config.toml!') + (data.backup_path ? '<br/><small style="color:#475569;">Backup: ' + data.backup_path + '</small>' : '') + '<br/>Reloading...</span>';
+        setTimeout(function() {
+            window.location.reload();
+        }, 1600);
+    })
+    .catch(function(err) {
+        if (statusMsg) statusMsg.innerHTML = '<span>❌</span> <span style="color:#b91c1c;">Request failed: ' + err + '</span>';
+        if (btn) btn.disabled = false;
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkConfigStalenessStatus);
+} else {
+    checkConfigStalenessStatus();
+}
+"#;

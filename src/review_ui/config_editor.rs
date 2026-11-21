@@ -694,6 +694,7 @@ fn render_config_from_template_values(
         if let Some((key, original_value)) = parse_config_key_value_line(line) {
             let field_id = config_field_id(&current_section_id, &key);
             template_field_ids.insert(field_id.clone());
+            let has_custom = values.contains_key(&field_id);
             let value = values
                 .get(&field_id)
                 .cloned()
@@ -703,13 +704,25 @@ fn render_config_from_template_values(
             rendered_lines.push(format!("{} = {}", key, value));
 
             if is_multiline_array_start(&original_value) {
-                idx += 1;
-                while idx < template_lines.len() {
-                    let next_trimmed = template_lines[idx].trim();
-                    if next_trimmed.starts_with(']') {
-                        break;
-                    }
+                if has_custom {
                     idx += 1;
+                    while idx < template_lines.len() {
+                        let next_trimmed = template_lines[idx].trim();
+                        if next_trimmed.starts_with(']') {
+                            break;
+                        }
+                        idx += 1;
+                    }
+                } else {
+                    idx += 1;
+                    while idx < template_lines.len() {
+                        let array_line = template_lines[idx];
+                        rendered_lines.push(array_line.to_string());
+                        if array_line.trim().starts_with(']') {
+                            break;
+                        }
+                        idx += 1;
+                    }
                 }
             }
 
@@ -820,6 +833,31 @@ pub(super) fn save_full_config_values(
     fs::write(config_path, rendered)
         .map_err(|e| format!("failed to write {}: {}", config_path, e))?;
     Ok(())
+}
+
+/// Upgrades the global config file by merging newly added options from the template
+/// into the existing config file, creating a timestamped backup first, and preserving
+/// all existing customized settings and credentials.
+pub(super) fn upgrade_global_config_file(
+    config_path: &str,
+    template_path: &str,
+    pdf_path: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    config::ensure_config_and_template_files(config_path, template_path, pdf_path)?;
+    let existing_values = load_current_config_values(config_path)?;
+
+    let ts = chrono::Utc::now().format("%Y%m%dT%H%M%SZ").to_string();
+    let backup_path = format!("{}.bak.{}", config_path, ts);
+    fs::copy(config_path, &backup_path)
+        .map_err(|e| format!("failed to create backup {}: {}", backup_path, e))?;
+
+    let non_sensitive: HashMap<String, String> = existing_values
+        .into_iter()
+        .filter(|(k, _)| !is_sensitive_config_field(k))
+        .collect();
+
+    save_full_config_values(config_path, template_path, pdf_path, &non_sensitive)?;
+    Ok(backup_path)
 }
 
 /// Build config editor data for a country review UI session.
@@ -1247,5 +1285,54 @@ mod tests {
                 Some(windows)
             );
         }
+    }
+
+    #[test]
+    fn test_upgrade_global_config_file() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let global = temp.path().join("config.toml");
+        let template = temp.path().join("config_template.toml");
+        let pdf = temp.path().join("manual.pdf");
+
+        let user_content = "[core]\nalbums_root = \"CustomAlbums\"\n";
+
+        fs::write(&global, user_content).expect("global write");
+        fs::write(&pdf, "").expect("pdf write");
+
+        let global_str = global.to_str().expect("global str");
+        let template_str = template.to_str().expect("template str");
+        let pdf_str = pdf.to_str().expect("pdf str");
+
+        let backup_path = upgrade_global_config_file(global_str, template_str, pdf_str)
+            .expect("upgrade should succeed");
+
+        assert!(
+            std::path::Path::new(&backup_path).exists(),
+            "Backup file must exist"
+        );
+        let backup_content = fs::read_to_string(&backup_path).expect("backup read");
+        assert_eq!(backup_content, user_content);
+
+        let upgraded_content = fs::read_to_string(global_str).expect("upgraded read");
+        assert!(
+            upgraded_content.contains("CustomAlbums"),
+            "Customized value must be preserved"
+        );
+        assert!(
+            upgraded_content.contains("guide_colour"),
+            "New template option must be added"
+        );
+        assert!(
+            upgraded_content.contains("definition_file"),
+            "New template option must be added"
+        );
+
+        // Verify that the upgraded content is no longer stale
+        let missing_after = config::check_config_staleness(&upgraded_content);
+        assert!(
+            missing_after.is_empty(),
+            "Upgraded config should have zero missing options, found: {:?}",
+            missing_after
+        );
     }
 }

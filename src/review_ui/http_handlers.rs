@@ -334,6 +334,61 @@ fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Reque
     None
 }
 
+fn handle_config_staleness_request(request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let url = request.url();
+    let (body, status) = if method == Method::Get && url == "/api/config-staleness" {
+        let user_content = std::fs::read_to_string("config.toml").unwrap_or_default();
+        let missing = crate::config::check_config_staleness(&user_content);
+        let resp = serde_json::json!({
+            "ok": true,
+            "stale": !missing.is_empty(),
+            "missing_count": missing.len(),
+            "missing_keys": missing,
+            "current_version": crate::updater::current_version(),
+        });
+        (resp, StatusCode(200))
+    } else if method == Method::Post && url == "/api/config-upgrade" {
+        match crate::review_ui::config_editor::upgrade_global_config_file(
+            "config.toml",
+            "config_template.toml",
+            "StampAlbumGenerator2HelpManual.pdf",
+        ) {
+            Ok(backup_path) => (
+                serde_json::json!({
+                    "ok": true,
+                    "message": "Successfully updated config.toml to include new settings.",
+                    "backup_path": backup_path,
+                }),
+                StatusCode(200),
+            ),
+            Err(e) => (
+                serde_json::json!({
+                    "ok": false,
+                    "message": format!("Failed to update config.toml: {e}"),
+                }),
+                StatusCode(500),
+            ),
+        }
+    } else {
+        return Some(request);
+    };
+
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!(
+            "Failed responding to config staleness request: {error}"
+        ));
+    }
+    None
+}
+
 fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
     let path = request.url().split('?').next().unwrap_or("");
     if path != "/api/stampworld-country-url"
@@ -406,6 +461,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         };
         let Some(request) = handle_update_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_config_staleness_request(request) else {
             continue;
         };
         let Some(request) = external_album_api::handle(request) else {
@@ -1452,6 +1510,9 @@ pub(super) fn serve_review_requests(
             continue;
         };
         let Some(request) = handle_update_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_config_staleness_request(request) else {
             continue;
         };
         let Some(mut request) = handle_country_url_request(request) else {

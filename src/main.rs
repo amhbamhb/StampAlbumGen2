@@ -298,7 +298,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if !missing.is_empty() {
                 eprintln!(
                     "\n⚠  Your config.toml is missing {} option(s) added in this version:\n   {}\n\
-                 Run:  stamp_album_gen2 --init-config   (backs up your current config.toml first)\n",
+                 Run:  stamp_album_gen2 --force-init-config   (backs up your current config.toml first)\n",
                     missing.len(),
                     missing.join(", ")
                 );
@@ -582,9 +582,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // This will create config.toml from config_template.toml if present,
         // or serialize defaults. When force_init_config is true it will
         // overwrite an existing file after creating a timestamped backup.
+        let already_existed = std::path::Path::new("config.toml").exists();
         match config::create_config_from_template("config.toml", cli.force_init_config) {
             Ok(_) => {
-                println!("Configuration file created/updated at 'config.toml'.");
+                if !already_existed || cli.force_init_config {
+                    println!("Configuration file created/updated at 'config.toml'.");
+                }
                 std::process::exit(0);
             }
             Err(e) => {

@@ -1,7 +1,8 @@
 use super::{
-    BACKEND_NOT_RESPONDING_MESSAGE, UPDATE_CLIENT_JS, render_app_footer_html,
-    render_config_editor_assets, render_footer_year_script, render_reconnect_banner_html,
-    render_runtime_log_panel_html, render_update_dialog_html,
+    BACKEND_NOT_RESPONDING_MESSAGE, CONFIG_STALENESS_CLIENT_JS, UPDATE_CLIENT_JS,
+    render_app_footer_html, render_config_editor_assets, render_config_staleness_dialog_html,
+    render_footer_year_script, render_reconnect_banner_html, render_runtime_log_panel_html,
+    render_update_dialog_html,
 };
 
 use super::bootstrap_assets::{
@@ -52,8 +53,10 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
 {bootstrap_body_html}
 {bootstrap_script_html}
 {update_dialog_html}
+{config_staleness_dialog_html}
 <script>
 {update_client_js}
+{config_staleness_client_js}
 </script>
 {footer_html}
 {footer_year_script}
@@ -65,6 +68,8 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
         bootstrap_script_html = bootstrap_script_html,
         update_dialog_html = render_update_dialog_html(),
         update_client_js = UPDATE_CLIENT_JS,
+        config_staleness_dialog_html = render_config_staleness_dialog_html(),
+        config_staleness_client_js = CONFIG_STALENESS_CLIENT_JS,
         footer_html = render_app_footer_html(),
         footer_year_script = render_footer_year_script(),
         config_editor_assets = render_config_editor_assets()

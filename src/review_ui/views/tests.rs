@@ -124,3 +124,17 @@ fn both_pull_screens_explain_start_failures_and_offer_site_accounts() {
     assert!(render_bootstrap_html(None).contains("showStampWorldStartError(j.message)"));
     assert!(render_html(&minimal_payload()).contains("showStampWorldStartError(backendMessage)"));
 }
+
+#[test]
+fn both_screens_embed_config_staleness_dialog_and_hooks() {
+    for html in [render_bootstrap_html(None), render_html(&minimal_payload())] {
+        assert!(html.contains("id='configStaleDialog'"));
+        assert!(html.contains("id='btnConfigStaleBadge'"));
+        assert!(html.contains("/api/config-staleness"));
+        assert!(html.contains("/api/config-upgrade"));
+        assert!(html.contains("openConfigStalenessDialog()"));
+        assert!(html.contains("executeConfigUpgrade()"));
+        assert!(html.contains("Why the app never modifies config.toml automatically on launch"));
+        assert!(html.contains("Built-in Defaults Apply Automatically"));
+    }
+}
