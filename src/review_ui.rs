@@ -1958,6 +1958,10 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
     out
 }
 
+fn bundled_placeholder_jpg() -> &'static [u8] {
+    include_bytes!("../assets/new/stampplaceholder.jpg")
+}
+
 fn create_bootstrap_country_or_theme(
     req: &BootstrapCreateCountryRequest,
 ) -> Result<BootstrapCreateCountryResponse, String> {
@@ -2040,9 +2044,11 @@ fn create_bootstrap_country_or_theme(
     })?;
 
     let db_path_str = db_path.to_string_lossy().to_string();
-    if !db_path.exists() {
-        crate::db_utils::init_db(&db_path_str)
-            .map_err(|e| format!("Failed to initialize database {}: {}", db_path.display(), e))?;
+    let was_new = !db_path.exists();
+    let conn = crate::db_utils::init_db(&db_path_str)
+        .map_err(|e| format!("Failed to initialize database {}: {}", db_path.display(), e))?;
+
+    if was_new {
         log_runtime_event(&format!(
             "Bootstrap: created new country/theme '{}' at {} with initialized database",
             raw_name,
@@ -2054,6 +2060,46 @@ fn create_bootstrap_country_or_theme(
             raw_name,
             country_dir.display()
         ));
+    }
+
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM stamps", [], |row| row.get(0))
+        .unwrap_or(0);
+    if count == 0 {
+        let placeholder_path = images_dir.join("placeholder.jpg");
+        if !placeholder_path.exists() {
+            if let Err(e) = fs::write(&placeholder_path, bundled_placeholder_jpg()) {
+                log_runtime_event(&format!(
+                    "Bootstrap: warning: failed to write starter placeholder image {}: {}",
+                    placeholder_path.display(),
+                    e
+                ));
+            }
+        }
+        if let Err(e) = conn.execute(
+            "INSERT INTO stamps (
+                country, sg_number, catalog_code, year, series, description, image_path
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            rusqlite::params![
+                raw_name,
+                "1",
+                "sg",
+                2026,
+                "Starter Placeholder",
+                "Starter placeholder stamp — delete or edit after adding/matching records.",
+                "images/placeholder.jpg",
+            ],
+        ) {
+            log_runtime_event(&format!(
+                "Bootstrap: warning: failed to insert starter placeholder stamp: {}",
+                e
+            ));
+        } else {
+            log_runtime_event(&format!(
+                "Bootstrap: seeded starter placeholder stamp and image for '{}'",
+                raw_name
+            ));
+        }
     }
 
     let display_country = slug.replace('-', " ");
@@ -3742,6 +3788,74 @@ mod tests {
             p.to_string_lossy().contains("images"),
             "Must be placed inside images directory"
         );
+    }
+
+    #[test]
+    fn test_create_bootstrap_country_seeds_starter_placeholder() {
+        use super::{
+            BootstrapCreateCountryRequest, create_bootstrap_country_or_theme,
+            set_bootstrap_albums_root_override,
+        };
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let albums_dir = temp_dir.path().join("Albums");
+        std::fs::create_dir_all(&albums_dir).expect("create Albums dir");
+        set_bootstrap_albums_root_override(&albums_dir.to_string_lossy())
+            .expect("set bootstrap override");
+
+        let res = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "Test Country".to_string(),
+        })
+        .expect("bootstrap new country");
+
+        assert!(res.ok);
+        assert_eq!(res.country.as_deref(), Some("Test Country"));
+
+        let country_dir = albums_dir.join("Test-Country");
+        let placeholder_img = country_dir.join("images").join("placeholder.jpg");
+        assert!(
+            placeholder_img.exists(),
+            "Starter placeholder image must exist"
+        );
+        assert!(
+            placeholder_img.metadata().unwrap().len() > 0,
+            "Starter placeholder image must not be empty"
+        );
+
+        let db_path = country_dir.join("Test-Country.db");
+        assert!(db_path.exists(), "Country database must exist");
+
+        let conn = rusqlite::Connection::open(&db_path).expect("open db");
+        let stamp_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))
+            .expect("count stamps");
+        assert_eq!(
+            stamp_count, 1,
+            "Must seed exactly 1 starter placeholder stamp"
+        );
+
+        let (sg, series, desc, img_path): (String, String, String, String) = conn
+            .query_row(
+                "SELECT sg_number, series, description, image_path FROM stamps LIMIT 1",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .expect("read starter stamp");
+        assert_eq!(sg, "1");
+        assert_eq!(series, "Starter Placeholder");
+        assert!(desc.contains("Starter placeholder"));
+        assert_eq!(img_path, "images/placeholder.jpg");
+
+        // Running again must be idempotent and not create duplicate records
+        let res2 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "Test Country".to_string(),
+        })
+        .expect("bootstrap existing country");
+        assert!(res2.ok);
+
+        let stamp_count_after: i64 = conn
+            .query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))
+            .expect("count stamps after");
+        assert_eq!(stamp_count_after, 1, "Must remain exactly 1 stamp");
     }
 }
 pub mod pdf_parser;
