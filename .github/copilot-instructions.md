@@ -49,6 +49,7 @@ Before creating any commit, all relevant tests must pass.
 2. Do not commit if any test fails.
 3. If tests cannot be executed (environment/tooling issue), do not commit; report the blocker and required fix steps first.
 4. **CLI Docs Regeneration**: Whenever any CLI option, argument, flag, or help string in `src/cli.rs` changes, regenerate `docs/CLI_USAGE.md` before committing or pushing (`cargo run --no-default-features -- --help > docs/CLI_USAGE.md`). The `verify-cli-docs.yml` workflow enforces this.
+5. **Commit Header Length Limit**: The first line (commit header `<type>(<scope>): <description>`) must NOT exceed 100 characters. The `commitlint` CI workflow strictly fails on headers over 100 characters (`[header-max-length]`).
 
 ## Rust Safety Rule
 

@@ -154,6 +154,7 @@ Follow Conventional Commits based on the [Conventional Commit Messages Specifica
 - Use imperative, present tense: `"add"`, `"fix"`, `"update"`, `"refactor"` (not `"added"`, `"fixed"`). Think: *"This commit will..."*.
 - Do **not** capitalize the first letter (unless a proper noun/identifier).
 - Do **not** end with a period (`.`).
+- **Header Length Limit (MANDATORY)**: The commit header line (`<type>(<scope>): <description>`) **must NOT exceed 100 characters** (strictly enforced by GitHub Actions `commitlint` via `[header-max-length]`). Keep descriptions punchy, and place detailed notes or issue links in the body/footer if the header approaches 100 characters.
 
 #### Breaking Changes
 - Indicate with an `!` before the colon: e.g. `feat(parser)!: break backwards compatibility with legacy format`.
