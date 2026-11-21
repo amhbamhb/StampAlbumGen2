@@ -30,13 +30,19 @@ pub fn import_stampworld_file(
         _ => return Err("Select a StampWorld PDF or HTML file".to_string()),
     };
     let total_found = records.len();
+    let start_val = start_year
+        .parse::<i32>()
+        .map_err(|e| format!("Invalid start year: {e}"))?;
+    let end_val = end_year
+        .parse::<i32>()
+        .map_err(|e| format!("Invalid end year: {e}"))?;
     let mut filtered = Vec::new();
     for record in records {
         let year = record
             .year
             .parse::<i32>()
             .map_err(|_| format!("Invalid year for stamp {}", record.catalog_number))?;
-        if (start_year.parse::<i32>().unwrap()..=end_year.parse::<i32>().unwrap()).contains(&year) {
+        if (start_val..=end_val).contains(&year) {
             filtered.push(record);
         }
     }

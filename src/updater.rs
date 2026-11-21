@@ -548,10 +548,15 @@ pub fn restart_application() -> Result<(), String> {
         let mut cmd_line = format!("ping 127.0.0.1 -n 3 >nul & start \"\" \"{}\"", exe_str);
         for arg in args {
             let arg_str = arg.to_string_lossy();
-            if arg_str.contains(' ') {
-                cmd_line.push_str(&format!(" \"{}\"", arg_str));
+            // Sanitize against command injection: strip quotes and shell metacharacters
+            let sanitized: String = arg_str
+                .chars()
+                .filter(|c| !matches!(c, '"' | '&' | '|' | '<' | '>' | '^' | '\r' | '\n'))
+                .collect();
+            if sanitized.contains(' ') {
+                cmd_line.push_str(&format!(" \"{}\"", sanitized));
             } else {
-                cmd_line.push_str(&format!(" {}", arg_str));
+                cmd_line.push_str(&format!(" {}", sanitized));
             }
         }
         let _ = std::process::Command::new("cmd")

@@ -71,7 +71,8 @@ album_stamp_img_new_setting_preserve_aspect = false
 fn test_album_stamp_img_new_setting_command_format() {
     // Read the album_utils/globals.rs file to check command formatting
     let album_utils_content = fs::read_to_string("src/album_utils/globals.rs")
-        .expect("Failed to read album_utils/globals.rs");
+        .expect("Failed to read album_utils/globals.rs")
+        .replace("\r\n", "\n");
 
     // Check that the command format uses all three parameters
     assert!(
@@ -141,7 +142,8 @@ fn test_default_values_consistency() {
     let album_globals_content = fs::read_to_string("src/album_globals/globals.rs")
         .expect("Failed to read album_globals/globals.rs");
     let album_utils_content = fs::read_to_string("src/album_utils/globals.rs")
-        .expect("Failed to read album_utils/globals.rs");
+        .expect("Failed to read album_utils/globals.rs")
+        .replace("\r\n", "\n");
 
     // Check that default values are used consistently
     // In layout calculations, 0.0 is used as default (no additional adjustment)

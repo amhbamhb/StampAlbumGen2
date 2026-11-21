@@ -32,6 +32,7 @@ use matcher_service::{
 pub mod db_query;
 mod external_album_api;
 mod http_handlers;
+pub use http_handlers::is_allowed_image_file;
 mod http_utils;
 mod pdf_generation;
 // mod report_generation;
@@ -1965,8 +1966,46 @@ fn create_bootstrap_country_or_theme(
         return Err("Country or theme name cannot be empty.".to_string());
     }
 
-    if raw_name.contains('/') || raw_name.contains('\\') || raw_name.contains("..") {
-        return Err("Name contains invalid characters (/ \\ ..)".to_string());
+    if raw_name.chars().any(|c| {
+        matches!(
+            c,
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' | '\0'..='\x1f'
+        )
+    }) || raw_name.contains("..")
+    {
+        return Err(
+            "Name contains invalid characters (/ \\ : * ? \" < > | or control characters)"
+                .to_string(),
+        );
+    }
+
+    let upper_name = raw_name.to_ascii_uppercase();
+    if matches!(
+        upper_name.as_str(),
+        "CON"
+            | "PRN"
+            | "AUX"
+            | "NUL"
+            | "COM1"
+            | "COM2"
+            | "COM3"
+            | "COM4"
+            | "COM5"
+            | "COM6"
+            | "COM7"
+            | "COM8"
+            | "COM9"
+            | "LPT1"
+            | "LPT2"
+            | "LPT3"
+            | "LPT4"
+            | "LPT5"
+            | "LPT6"
+            | "LPT7"
+            | "LPT8"
+            | "LPT9"
+    ) {
+        return Err("Name is a reserved system device name.".to_string());
     }
 
     let albums_root = resolve_bootstrap_albums_root()
@@ -3611,6 +3650,98 @@ mod tests {
 
         assert_eq!(updated, 1);
         assert_eq!(processed, 1);
+    }
+
+    #[test]
+    fn test_is_allowed_image_file_security() {
+        use super::is_allowed_image_file;
+        use std::path::Path;
+
+        // Valid image extensions should pass
+        assert!(is_allowed_image_file(Path::new("stamp.png")));
+        assert!(is_allowed_image_file(Path::new("images/photo.jpg")));
+        assert!(is_allowed_image_file(Path::new(
+            "Albums/Switzerland/images/s1.JPEG"
+        )));
+        assert!(is_allowed_image_file(Path::new("flag.webp")));
+        assert!(is_allowed_image_file(Path::new("coa.svg")));
+        assert!(is_allowed_image_file(Path::new("icon.ico")));
+        assert!(is_allowed_image_file(Path::new("bitmap.bmp")));
+        assert!(is_allowed_image_file(Path::new("animation.gif")));
+
+        // Sensitive, executable, or non-image files must be rejected
+        assert!(!is_allowed_image_file(Path::new("config.toml")));
+        assert!(!is_allowed_image_file(Path::new(
+            "Albums/Switzerland/config.toml"
+        )));
+        assert!(!is_allowed_image_file(Path::new("stamps.db")));
+        assert!(!is_allowed_image_file(Path::new(
+            "Albums/Switzerland/Switzerland.db"
+        )));
+        assert!(!is_allowed_image_file(Path::new("/etc/passwd")));
+        assert!(!is_allowed_image_file(Path::new("C:/Windows/win.ini")));
+        assert!(!is_allowed_image_file(Path::new("secret.env")));
+        assert!(!is_allowed_image_file(Path::new(".env")));
+        assert!(!is_allowed_image_file(Path::new("id_rsa")));
+        assert!(!is_allowed_image_file(Path::new("script.sh")));
+        assert!(!is_allowed_image_file(Path::new("app.exe")));
+
+        // Hidden files/directories must be rejected even with image extensions
+        assert!(!is_allowed_image_file(Path::new(".git/HEAD.png")));
+        assert!(!is_allowed_image_file(Path::new(".ssh/id_rsa.jpg")));
+        assert!(!is_allowed_image_file(Path::new(".secret/stamp.png")));
+    }
+
+    #[test]
+    fn test_create_bootstrap_country_or_theme_security_validation() {
+        use super::{BootstrapCreateCountryRequest, create_bootstrap_country_or_theme};
+
+        // Path traversal attempts must be rejected
+        let r1 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "../bad".to_string(),
+        });
+        assert!(r1.is_err(), "Must reject ../ traversal");
+
+        let r2 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "sub/folder".to_string(),
+        });
+        assert!(r2.is_err(), "Must reject / separator");
+
+        let r3 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "sub\\folder".to_string(),
+        });
+        assert!(r3.is_err(), "Must reject \\ separator");
+
+        // Invalid Windows filename characters must be rejected
+        for bad_char in [':', '*', '?', '"', '<', '>', '|'] {
+            let r = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+                name: format!("bad{}name", bad_char),
+            });
+            assert!(r.is_err(), "Must reject character: {}", bad_char);
+        }
+
+        // Windows reserved device names must be rejected
+        for reserved in ["CON", "PRN", "AUX", "NUL", "COM1", "LPT1"] {
+            let r = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+                name: reserved.to_string(),
+            });
+            assert!(r.is_err(), "Must reject reserved device name: {}", reserved);
+        }
+    }
+
+    #[test]
+    fn test_resolve_album_image_path_prevents_traversal() {
+        let p = crate::file_utils::resolve_album_image_path("Malta", "../../secret.png");
+        // Must sanitize traversal components and resolve strictly inside images
+        assert!(
+            !p.to_string_lossy().contains(".."),
+            "Path must not contain '..'"
+        );
+        assert!(p.ends_with("secret.png"), "Must preserve image filename");
+        assert!(
+            p.to_string_lossy().contains("images"),
+            "Must be placed inside images directory"
+        );
     }
 }
 pub mod pdf_parser;

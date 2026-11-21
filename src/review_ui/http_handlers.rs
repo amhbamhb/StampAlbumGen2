@@ -19,6 +19,29 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
+/// Validates that a requested file path has an allowed image extension and
+/// contains no directory traversal into hidden or sensitive configuration paths.
+pub fn is_allowed_image_file(path: &Path) -> bool {
+    let Some(ext) = path.extension().and_then(|e| e.to_str()) else {
+        return false;
+    };
+    match ext.to_ascii_lowercase().as_str() {
+        "jpg" | "jpeg" | "png" | "webp" | "gif" | "svg" | "ico" | "bmp" => {}
+        _ => return false,
+    }
+
+    for comp in path.components() {
+        let name = comp.as_os_str().to_string_lossy();
+        if (name.starts_with('.') && name != "." && name != "..")
+            || name.eq_ignore_ascii_case("config.toml")
+            || name.ends_with(".db")
+        {
+            return false;
+        }
+    }
+    true
+}
+
 fn protect_local_request(
     request: tiny_http::Request,
     server: &Server,
@@ -1871,10 +1894,20 @@ pub(super) fn serve_review_requests(
                 let _ = request.respond(Response::empty(StatusCode(400)));
                 continue;
             };
-            let p = PathBuf::from(path);
-            if !p.exists() {
+            let p = PathBuf::from(&path);
+            if !is_allowed_image_file(&p) {
+                let _ = request.respond(Response::empty(StatusCode(403)));
+                continue;
+            }
+            if !p.exists() || !p.is_file() {
                 let _ = request.respond(Response::empty(StatusCode(404)));
                 continue;
+            }
+            if let Ok(canonical) = p.canonicalize() {
+                if !is_allowed_image_file(&canonical) {
+                    let _ = request.respond(Response::empty(StatusCode(403)));
+                    continue;
+                }
             }
             match fs::File::open(&p) {
                 Ok(f) => {
