@@ -1,0 +1,15 @@
+# StampAlbumGen2 native album document, version 1.
+# Paired AlbumEasy 4.5.0 input is a4-portrait.txt (A4 portrait: 210 x 297 mm).
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "PAGE-SIZE-V1 / A4 PORTRAIT")

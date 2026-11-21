@@ -5,7 +5,7 @@
 
 use crate::types::ALBUM_DB_PATH;
 use log::debug;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn resolve_runtime_albums_root() -> PathBuf {
     if let Ok(from_env) = std::env::var("STAMP_ALBUMS_ROOT") {
@@ -33,10 +33,18 @@ pub fn resolve_album_dir(album_name: &str) -> PathBuf {
 
 pub fn resolve_album_image_path(album_name: &str, image_path: &str) -> PathBuf {
     let clean_image_path = image_path.strip_prefix("images/").unwrap_or(image_path);
+    // Sanitize any path traversal segments (.. or absolute root prefixes)
+    let sanitized_rel: PathBuf = Path::new(clean_image_path)
+        .components()
+        .filter_map(|comp| match comp {
+            std::path::Component::Normal(p) => Some(p),
+            _ => None,
+        })
+        .collect();
 
     resolve_album_dir(album_name)
         .join("images")
-        .join(clean_image_path)
+        .join(sanitized_rel)
 }
 
 /// Sets the database path from CLI arguments

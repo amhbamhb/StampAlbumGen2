@@ -6,6 +6,14 @@ This release fixes critical page numbering issues and eliminates blank pages in 
 
 ## 🚀 New Features
 
+### Auto-Update Application System (Issue #124)
+
+- **Review UI Update Notification Badge**: Background check against GitHub Releases (`amhbamhb/StampAlbumGen2`) displays a pulsing notification in the top navigation header whenever a newer version is available.
+- **One-Click In-Browser Upgrade**: Clicking the notification opens an update modal showing version comparison (`v1.15.0 -> v1.X.X`), release highlights, and a one-click **"Update & Restart Now"** button.
+- **Cryptographic Verification**: Automatically downloads the release binary, matches its SHA256 checksum against `.sha256` asset, and performs atomic self-replacement across Windows and Linux.
+- **CLI Commands**: Added `--check-update` and `--update` flags for headless/terminal management.
+- **Configurable**: Configured via `[updates].check_on_startup` (default: `true`).
+
 ### Page Numbering System Fixes
 
 - **Sequential page numbering**: Fixed inconsistent page numbering (1, 3, 5, 7, 8, 10, 13...) to proper sequential order (1, 2, 3, 4, 5...)

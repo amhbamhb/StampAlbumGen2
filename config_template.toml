@@ -1378,3 +1378,14 @@ max_lines = 4
 # Allowed lower/upper maximum-line count for per-item overrides.
 minimum_max_lines = 1
 maximum_max_lines = 8
+
+###################################
+# Automatic Updates
+###################################
+[updates]
+# When true, StampAlbumGen2 automatically checks for newer releases from
+# GitHub in the background on startup (cached for 6 hours).
+# If an update is found, an update badge appears in the Review UI header.
+# Default: true
+check_on_startup = true
+

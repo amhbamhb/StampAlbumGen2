@@ -95,6 +95,54 @@ fn four_page_sizes_render_and_read_back() -> Result<()> {
 }
 
 #[test]
+fn page_size_stampalbum_and_raw_files_render_and_match_dimensions() -> Result<()> {
+    use stamp_album_gen2::native_pdf::{album::NativeAlbum, albumeasy};
+
+    let root = fixture("page-size-v1");
+    let temporary = tempfile::tempdir()?;
+    let cases = [
+        ("a4-portrait", 210.0, 297.0),
+        ("a4-landscape", 297.0, 210.0),
+        ("us-letter", 215.9, 279.4),
+        ("fractional", 210.25, 297.75),
+    ];
+
+    for (stem, width_mm, height_mm) in cases {
+        let raw_path = root.join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = temporary.path().join(format!("{stem}-raw.pdf"));
+        let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, 1);
+        let doc_raw = PdfDocument::open(&raw_pdf)?;
+        let page_raw = doc_raw.get_page(0)?;
+        near(
+            points_to_mm(page_raw.media_box[2] - page_raw.media_box[0]),
+            width_mm,
+        );
+        near(
+            points_to_mm(page_raw.media_box[3] - page_raw.media_box[1]),
+            height_mm,
+        );
+
+        let native_path = root.join(format!("{stem}.stampalbum"));
+        let native_pdf = temporary.path().join(format!("{stem}-native.pdf"));
+        let album = NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(native_pages.len(), 1);
+        let doc_native = PdfDocument::open(&native_pdf)?;
+        let page_native = doc_native.get_page(0)?;
+        near(
+            points_to_mm(page_native.media_box[2] - page_native.media_box[0]),
+            width_mm,
+        );
+        near(
+            points_to_mm(page_native.media_box[3] - page_native.media_box[1]),
+            height_mm,
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn margin_and_even_page_bounds_match_frozen_expectations() -> Result<()> {
     let root = fixture("margins-v1");
     let manifest: Value = serde_json::from_slice(&fs::read(root.join("expected.json"))?)?;

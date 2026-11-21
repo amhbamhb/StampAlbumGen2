@@ -32,6 +32,7 @@ use matcher_service::{
 pub mod db_query;
 mod external_album_api;
 mod http_handlers;
+pub use http_handlers::is_allowed_image_file;
 mod http_utils;
 mod pdf_generation;
 // mod report_generation;
@@ -1957,6 +1958,10 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
     out
 }
 
+fn bundled_placeholder_jpg() -> &'static [u8] {
+    include_bytes!("../assets/new/stampplaceholder.jpg")
+}
+
 fn create_bootstrap_country_or_theme(
     req: &BootstrapCreateCountryRequest,
 ) -> Result<BootstrapCreateCountryResponse, String> {
@@ -1965,8 +1970,46 @@ fn create_bootstrap_country_or_theme(
         return Err("Country or theme name cannot be empty.".to_string());
     }
 
-    if raw_name.contains('/') || raw_name.contains('\\') || raw_name.contains("..") {
-        return Err("Name contains invalid characters (/ \\ ..)".to_string());
+    if raw_name.chars().any(|c| {
+        matches!(
+            c,
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' | '\0'..='\x1f'
+        )
+    }) || raw_name.contains("..")
+    {
+        return Err(
+            "Name contains invalid characters (/ \\ : * ? \" < > | or control characters)"
+                .to_string(),
+        );
+    }
+
+    let upper_name = raw_name.to_ascii_uppercase();
+    if matches!(
+        upper_name.as_str(),
+        "CON"
+            | "PRN"
+            | "AUX"
+            | "NUL"
+            | "COM1"
+            | "COM2"
+            | "COM3"
+            | "COM4"
+            | "COM5"
+            | "COM6"
+            | "COM7"
+            | "COM8"
+            | "COM9"
+            | "LPT1"
+            | "LPT2"
+            | "LPT3"
+            | "LPT4"
+            | "LPT5"
+            | "LPT6"
+            | "LPT7"
+            | "LPT8"
+            | "LPT9"
+    ) {
+        return Err("Name is a reserved system device name.".to_string());
     }
 
     let albums_root = resolve_bootstrap_albums_root()
@@ -2001,9 +2044,11 @@ fn create_bootstrap_country_or_theme(
     })?;
 
     let db_path_str = db_path.to_string_lossy().to_string();
-    if !db_path.exists() {
-        crate::db_utils::init_db(&db_path_str)
-            .map_err(|e| format!("Failed to initialize database {}: {}", db_path.display(), e))?;
+    let was_new = !db_path.exists();
+    let conn = crate::db_utils::init_db(&db_path_str)
+        .map_err(|e| format!("Failed to initialize database {}: {}", db_path.display(), e))?;
+
+    if was_new {
         log_runtime_event(&format!(
             "Bootstrap: created new country/theme '{}' at {} with initialized database",
             raw_name,
@@ -2015,6 +2060,46 @@ fn create_bootstrap_country_or_theme(
             raw_name,
             country_dir.display()
         ));
+    }
+
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM stamps", [], |row| row.get(0))
+        .unwrap_or(0);
+    if count == 0 {
+        let placeholder_path = images_dir.join("placeholder.jpg");
+        if !placeholder_path.exists() {
+            if let Err(e) = fs::write(&placeholder_path, bundled_placeholder_jpg()) {
+                log_runtime_event(&format!(
+                    "Bootstrap: warning: failed to write starter placeholder image {}: {}",
+                    placeholder_path.display(),
+                    e
+                ));
+            }
+        }
+        if let Err(e) = conn.execute(
+            "INSERT INTO stamps (
+                country, sg_number, catalog_code, year, series, description, image_path
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            rusqlite::params![
+                raw_name,
+                "1",
+                "sg",
+                2026,
+                "Starter Placeholder",
+                "Starter placeholder stamp — delete or edit after adding/matching records.",
+                "images/placeholder.jpg",
+            ],
+        ) {
+            log_runtime_event(&format!(
+                "Bootstrap: warning: failed to insert starter placeholder stamp: {}",
+                e
+            ));
+        } else {
+            log_runtime_event(&format!(
+                "Bootstrap: seeded starter placeholder stamp and image for '{}'",
+                raw_name
+            ));
+        }
     }
 
     let display_country = slug.replace('-', " ");
@@ -3611,6 +3696,166 @@ mod tests {
 
         assert_eq!(updated, 1);
         assert_eq!(processed, 1);
+    }
+
+    #[test]
+    fn test_is_allowed_image_file_security() {
+        use super::is_allowed_image_file;
+        use std::path::Path;
+
+        // Valid image extensions should pass
+        assert!(is_allowed_image_file(Path::new("stamp.png")));
+        assert!(is_allowed_image_file(Path::new("images/photo.jpg")));
+        assert!(is_allowed_image_file(Path::new(
+            "Albums/Switzerland/images/s1.JPEG"
+        )));
+        assert!(is_allowed_image_file(Path::new("flag.webp")));
+        assert!(is_allowed_image_file(Path::new("coa.svg")));
+        assert!(is_allowed_image_file(Path::new("icon.ico")));
+        assert!(is_allowed_image_file(Path::new("bitmap.bmp")));
+        assert!(is_allowed_image_file(Path::new("animation.gif")));
+
+        // Sensitive, executable, or non-image files must be rejected
+        assert!(!is_allowed_image_file(Path::new("config.toml")));
+        assert!(!is_allowed_image_file(Path::new(
+            "Albums/Switzerland/config.toml"
+        )));
+        assert!(!is_allowed_image_file(Path::new("stamps.db")));
+        assert!(!is_allowed_image_file(Path::new(
+            "Albums/Switzerland/Switzerland.db"
+        )));
+        assert!(!is_allowed_image_file(Path::new("/etc/passwd")));
+        assert!(!is_allowed_image_file(Path::new("C:/Windows/win.ini")));
+        assert!(!is_allowed_image_file(Path::new("secret.env")));
+        assert!(!is_allowed_image_file(Path::new(".env")));
+        assert!(!is_allowed_image_file(Path::new("id_rsa")));
+        assert!(!is_allowed_image_file(Path::new("script.sh")));
+        assert!(!is_allowed_image_file(Path::new("app.exe")));
+
+        // Hidden files/directories must be rejected even with image extensions
+        assert!(!is_allowed_image_file(Path::new(".git/HEAD.png")));
+        assert!(!is_allowed_image_file(Path::new(".ssh/id_rsa.jpg")));
+        assert!(!is_allowed_image_file(Path::new(".secret/stamp.png")));
+    }
+
+    #[test]
+    fn test_create_bootstrap_country_or_theme_security_validation() {
+        use super::{BootstrapCreateCountryRequest, create_bootstrap_country_or_theme};
+
+        // Path traversal attempts must be rejected
+        let r1 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "../bad".to_string(),
+        });
+        assert!(r1.is_err(), "Must reject ../ traversal");
+
+        let r2 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "sub/folder".to_string(),
+        });
+        assert!(r2.is_err(), "Must reject / separator");
+
+        let r3 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "sub\\folder".to_string(),
+        });
+        assert!(r3.is_err(), "Must reject \\ separator");
+
+        // Invalid Windows filename characters must be rejected
+        for bad_char in [':', '*', '?', '"', '<', '>', '|'] {
+            let r = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+                name: format!("bad{}name", bad_char),
+            });
+            assert!(r.is_err(), "Must reject character: {}", bad_char);
+        }
+
+        // Windows reserved device names must be rejected
+        for reserved in ["CON", "PRN", "AUX", "NUL", "COM1", "LPT1"] {
+            let r = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+                name: reserved.to_string(),
+            });
+            assert!(r.is_err(), "Must reject reserved device name: {}", reserved);
+        }
+    }
+
+    #[test]
+    fn test_resolve_album_image_path_prevents_traversal() {
+        let p = crate::file_utils::resolve_album_image_path("Malta", "../../secret.png");
+        // Must sanitize traversal components and resolve strictly inside images
+        assert!(
+            !p.to_string_lossy().contains(".."),
+            "Path must not contain '..'"
+        );
+        assert!(p.ends_with("secret.png"), "Must preserve image filename");
+        assert!(
+            p.to_string_lossy().contains("images"),
+            "Must be placed inside images directory"
+        );
+    }
+
+    #[test]
+    fn test_create_bootstrap_country_seeds_starter_placeholder() {
+        use super::{
+            BootstrapCreateCountryRequest, create_bootstrap_country_or_theme,
+            set_bootstrap_albums_root_override,
+        };
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let albums_dir = temp_dir.path().join("Albums");
+        std::fs::create_dir_all(&albums_dir).expect("create Albums dir");
+        set_bootstrap_albums_root_override(&albums_dir.to_string_lossy())
+            .expect("set bootstrap override");
+
+        let res = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "Test Country".to_string(),
+        })
+        .expect("bootstrap new country");
+
+        assert!(res.ok);
+        assert_eq!(res.country.as_deref(), Some("Test Country"));
+
+        let country_dir = albums_dir.join("Test-Country");
+        let placeholder_img = country_dir.join("images").join("placeholder.jpg");
+        assert!(
+            placeholder_img.exists(),
+            "Starter placeholder image must exist"
+        );
+        assert!(
+            placeholder_img.metadata().unwrap().len() > 0,
+            "Starter placeholder image must not be empty"
+        );
+
+        let db_path = country_dir.join("Test-Country.db");
+        assert!(db_path.exists(), "Country database must exist");
+
+        let conn = rusqlite::Connection::open(&db_path).expect("open db");
+        let stamp_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))
+            .expect("count stamps");
+        assert_eq!(
+            stamp_count, 1,
+            "Must seed exactly 1 starter placeholder stamp"
+        );
+
+        let (sg, series, desc, img_path): (String, String, String, String) = conn
+            .query_row(
+                "SELECT sg_number, series, description, image_path FROM stamps LIMIT 1",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .expect("read starter stamp");
+        assert_eq!(sg, "1");
+        assert_eq!(series, "Starter Placeholder");
+        assert!(desc.contains("Starter placeholder"));
+        assert_eq!(img_path, "images/placeholder.jpg");
+
+        // Running again must be idempotent and not create duplicate records
+        let res2 = create_bootstrap_country_or_theme(&BootstrapCreateCountryRequest {
+            name: "Test Country".to_string(),
+        })
+        .expect("bootstrap existing country");
+        assert!(res2.ok);
+
+        let stamp_count_after: i64 = conn
+            .query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))
+            .expect("count stamps after");
+        assert_eq!(stamp_count_after, 1, "Must remain exactly 1 stamp");
     }
 }
 pub mod pdf_parser;

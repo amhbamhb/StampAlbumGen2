@@ -9,11 +9,13 @@ use super::{
             album_pages_footer_number::AlbumPagesFooterNumber,
             album_pages_footer_pad::FooterPadding,
             album_pages_header::{AlbumPagesHeader, HeaderPosition},
+            album_pages_header_number::AlbumPagesHeaderNumber,
             album_pages_header_pad::HeaderPadding,
             album_pages_margin_txt::{
                 AlbumPagesMarginText, MarginAlignment, MarginDirection, MarginPosition,
             },
             album_pages_margins::Margins,
+            album_pages_marginse::EvenMargins,
             album_pages_size::PageSize,
             album_pages_spacing::Spacing,
             album_pages_title::AlbumPagesTitle,
@@ -93,11 +95,13 @@ impl NativeAlbum {
         let mut pdf_title = None;
         let mut page_size = None;
         let mut margins = None;
+        let mut even_margins = None;
         let mut spacing = None;
         let mut border = None;
         let mut border_colour = None;
         let mut page_title = None;
         let mut page_header = None;
+        let mut header_number = None;
         let mut footer_number = None;
         let mut margin_text = Vec::new();
         let mut alignment = None;
@@ -167,6 +171,15 @@ impl NativeAlbum {
                     set_once(
                         &mut margins,
                         Margins::parse(&numbers(&name, &args, 4).map_err(&fail)?).map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "ALBUM_PAGES_MARGINSE" => {
+                    set_once(
+                        &mut even_margins,
+                        EvenMargins::parse(&numbers(&name, &args, 4).map_err(&fail)?)
+                            .map_err(&fail)?,
                         &name,
                     )
                     .map_err(&fail)?;
@@ -259,6 +272,91 @@ impl NativeAlbum {
                             NamedColour::parse("black").map_err(&fail)?,
                         )
                         .map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "NATIVE_PAGE_HEADER_NUMBER" => {
+                    if args.len() != 8 && args.len() != 9 {
+                        return Err(fail(format!(
+                            "{name} requires font, point size, position, integer start, quoted prefix, quoted suffix, padding mm, minimum height mm, and optional colour"
+                        )));
+                    }
+                    let colour_str = if args.len() == 9 {
+                        unquoted(&args[8], &name).map_err(&fail)?
+                    } else {
+                        "black".to_string()
+                    };
+                    let style = AlbumPagesHeader::new(
+                        &unquoted(&args[0], &name).map_err(&fail)?,
+                        number(&args[1], &name, 2).map_err(&fail)?,
+                        HeaderPosition::parse_for(
+                            &unquoted(&args[2], &name).map_err(&fail)?,
+                            "native page header number position",
+                        )
+                        .map_err(&fail)?,
+                        "1",
+                        HeaderPadding::parse(&[number(&args[6], &name, 7).map_err(&fail)?])
+                            .map_err(&fail)?,
+                        number(&args[7], &name, 8).map_err(&fail)?,
+                        NamedColour::parse(&colour_str).map_err(&fail)?,
+                    )
+                    .map_err(&fail)?;
+                    set_once(
+                        &mut header_number,
+                        AlbumPagesHeaderNumber::new(
+                            style,
+                            integer(&args[3], &name, 4).map_err(&fail)?,
+                            &quoted(&args[4], &name).map_err(&fail)?,
+                            &quoted(&args[5], &name).map_err(&fail)?,
+                        )
+                        .map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "ALBUM_PAGES_HEADER_NUMBER" => {
+                    if args.len() < 3 || args.len() > 6 {
+                        return Err(fail(format!(
+                            "{name} requires font, point size, position, and optional start, quoted prefix, quoted suffix"
+                        )));
+                    }
+                    let font = unquoted(&args[0], &name).map_err(&fail)?;
+                    let size = number(&args[1], &name, 2).map_err(&fail)?;
+                    let position = HeaderPosition::parse_for(
+                        &unquoted(&args[2], &name).map_err(&fail)?,
+                        "header number position",
+                    )
+                    .map_err(&fail)?;
+                    let start = if args.len() > 3 {
+                        integer(&args[3], &name, 4).map_err(&fail)?
+                    } else {
+                        1
+                    };
+                    let before = if args.len() > 4 {
+                        quoted(&args[4], &name).map_err(&fail)?
+                    } else {
+                        String::new()
+                    };
+                    let after = if args.len() > 5 {
+                        quoted(&args[5], &name).map_err(&fail)?
+                    } else {
+                        String::new()
+                    };
+                    let style = AlbumPagesHeader::new(
+                        &font,
+                        size,
+                        position,
+                        "1",
+                        HeaderPadding::parse(&[0.0]).map_err(&fail)?,
+                        0.0,
+                        NamedColour::parse("black").map_err(&fail)?,
+                    )
+                    .map_err(&fail)?;
+                    set_once(
+                        &mut header_number,
+                        AlbumPagesHeaderNumber::new(style, start, &before, &after)
+                            .map_err(&fail)?,
                         &name,
                     )
                     .map_err(&fail)?;
@@ -1010,11 +1108,17 @@ impl NativeAlbum {
         if let Some(title) = pdf_title {
             page_settings.set_pdf_title(title);
         }
+        if let Some(even) = even_margins {
+            page_settings.set_even_margins(even);
+        }
         if let Some(title) = page_title {
             page_settings.set_title(title);
         }
         if let Some(header) = page_header {
             page_settings.set_header(header);
+        }
+        if let Some(number) = header_number {
+            page_settings.set_header_number(number);
         }
         if let Some(number) = footer_number {
             page_settings.set_footer_number(number);

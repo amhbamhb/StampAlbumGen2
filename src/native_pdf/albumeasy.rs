@@ -15,11 +15,13 @@ use super::{
             album_pages_footer_number::AlbumPagesFooterNumber,
             album_pages_footer_pad::FooterPadding,
             album_pages_header::{AlbumPagesHeader, HeaderPosition},
+            album_pages_header_number::AlbumPagesHeaderNumber,
             album_pages_header_pad::HeaderPadding,
             album_pages_margin_txt::{
                 AlbumPagesMarginText, MarginAlignment, MarginDirection, MarginPosition,
             },
             album_pages_margins::Margins,
+            album_pages_marginse::EvenMargins,
             album_pages_size::PageSize,
             album_pages_spacing::Spacing,
             album_pages_title::AlbumPagesTitle,
@@ -98,10 +100,14 @@ fn supported(name: &str) -> bool {
             | "ALBUM_AUTHOR"
             | "ALBUM_TITLE"
             | "ALBUM_PAGES_MARGINS"
+            | "ALBUM_PAGES_MARGINSE"
             | "ALBUM_PAGES_SPACING"
             | "ALBUM_PAGES_BORDER"
             | "ALBUM_PAGES_TITLE"
             | "ALBUM_PAGES_HEADER"
+            | "ALBUM_PAGES_HEADER_NUMBER"
+            | "ALBUM_PAGES_HEADER_PAD"
+            | "ALBUM_PAGES_FOOTER_PAD"
             | "ALBUM_PAGES_FOOTER_NUMBER"
             | "COLOR_ALBUM_FOOTER"
             | "COLOUR_ALBUM_FOOTER"
@@ -145,7 +151,9 @@ fn supported(name: &str) -> bool {
             | "PAGE_START_GROUP_BEGIN"
             | "PAGE_START_GROUP_END"
             | "PAGE_VSPACE"
+            | "PAGE_TEXT"
             | "PAGE_TEXT_CENTRE"
+            | "PAGE_TEXT_RIGHT"
             | "ROW_START_ES"
             | "ROW_START_FS"
             | "ROW_ALIGN_TOP"
@@ -709,11 +717,15 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let commands = input_commands(source)?;
     let mut size = None;
     let mut margins = None;
+    let mut even_margins = None;
     let mut spacing = None;
     let mut border = None;
     let mut title = None;
     let mut header = None;
+    let mut header_number = None;
+    let mut header_pad = 0.0;
     let mut footer_number = None;
+    let mut footer_pad = 0.0;
     let mut margin_text = Vec::new();
     let mut margin_padding = 0.0;
     let mut author = None;
@@ -747,6 +759,15 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 "ALBUM_PAGES_MARGINS" => {
                     count(c, 4, 4)?;
                     margins = Some(Margins::parse(&[n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?])?);
+                }
+                "ALBUM_PAGES_MARGINSE" => {
+                    count(c, 4, 4)?;
+                    even_margins = Some(EvenMargins::parse(&[
+                        n(c, 0)?,
+                        n(c, 1)?,
+                        n(c, 2)?,
+                        n(c, 3)?,
+                    ])?);
                 }
                 "ALBUM_PAGES_SPACING" => {
                     count(c, 2, 2)?;
@@ -817,6 +838,41 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         MarginDirection::parse(c.args.get(5).map_or("UP", |a| a.value.as_str()))?,
                     ));
                 }
+                "ALBUM_PAGES_HEADER_NUMBER" => {
+                    count(c, 3, 6)?;
+                    if c.args[0].quoted || c.args[2].quoted {
+                        return Err("Header font and position must be unquoted".into());
+                    }
+                    header_number = Some((
+                        c.line,
+                        c.args[0].value.clone(),
+                        n(c, 1)?,
+                        HeaderPosition::parse(&c.args[2].value)?,
+                        if c.args.len() > 3 {
+                            integer(&c.args[3], &c.name, 4)?
+                        } else {
+                            1
+                        },
+                        if c.args.len() > 4 {
+                            text(c, 4)?.to_string()
+                        } else {
+                            String::new()
+                        },
+                        if c.args.len() > 5 {
+                            text(c, 5)?.to_string()
+                        } else {
+                            String::new()
+                        },
+                    ));
+                }
+                "ALBUM_PAGES_HEADER_PAD" => {
+                    count(c, 1, 1)?;
+                    header_pad = n(c, 0)?;
+                }
+                "ALBUM_PAGES_FOOTER_PAD" => {
+                    count(c, 1, 1)?;
+                    footer_pad = n(c, 0)?;
+                }
                 "ALBUM_PAGES_FOOTER_NUMBER" => {
                     count(c, 3, 6)?;
                     if c.args[0].quoted || c.args[2].quoted {
@@ -881,6 +937,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     if let Some(pdf_title) = pdf_title {
         settings.set_pdf_title(pdf_title);
     }
+    if let Some(even) = even_margins {
+        settings.set_even_margins(even);
+    }
     if let Some((font, size, text, gap)) = title {
         settings.set_title(AlbumPagesTitle::new(
             &font,
@@ -897,10 +956,26 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
             size,
             position,
             &text,
-            HeaderPadding::parse(&[0.0])?,
+            HeaderPadding::parse(&[header_pad])?,
             0.0,
             header_colour,
         )?);
+    }
+    if let Some((line, font, size, position, start, before, after)) = header_number {
+        let hdr = (|| -> Result<AlbumPagesHeaderNumber> {
+            let style = AlbumPagesHeader::new(
+                &font,
+                size,
+                position,
+                "1",
+                HeaderPadding::parse(&[header_pad])?,
+                0.0,
+                header_colour,
+            )?;
+            AlbumPagesHeaderNumber::new(style, start, &before, &after)
+        })()
+        .map_err(|error| format!("Line {line}: ALBUM_PAGES_HEADER_NUMBER: {error}"))?;
+        settings.set_header_number(hdr);
     }
     if let Some((line, font, size, position, start, before, after)) = footer_number {
         let footer = (|| -> Result<AlbumPagesFooterNumber> {
@@ -909,7 +984,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 size,
                 position,
                 "1",
-                FooterPadding::parse(&[0.0])?,
+                FooterPadding::parse(&[footer_pad])?,
                 0.0,
                 footer_colour,
             )?;
@@ -1302,7 +1377,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         heading_colour,
                     )?);
                 }
-                "PAGE_VSPACE" | "PAGE_TEXT_CENTRE" => {
+                "PAGE_VSPACE" | "PAGE_TEXT" | "PAGE_TEXT_CENTRE" | "PAGE_TEXT_RIGHT" => {
                     let page = pages.last_mut().ok_or("Page content requires PAGE_START")?;
                     flush(
                         &mut row,
@@ -1310,7 +1385,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         &mut top,
                         page_settings.spacing().vertical_mm(),
                     )?;
-                    if c.name == "PAGE_VSPACE" {
+                    if c.name.to_uppercase() == "PAGE_VSPACE" {
                         count(c, 1, 1)?;
                         top -= n(c, 0)?;
                     } else {
@@ -1319,14 +1394,19 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         let width =
                             page.layout.content_bounds.right - page.layout.content_bounds.left;
                         if measured.lines.iter().any(|line| line.width_mm > width) {
-                            return Err("PAGE_TEXT_CENTRE exceeds content width".into());
+                            return Err(format!("{} exceeds content width", c.name).into());
                         }
+                        let align = match c.name.to_uppercase().as_str() {
+                            "PAGE_TEXT" => 0,
+                            "PAGE_TEXT_RIGHT" => 2,
+                            _ => 1,
+                        };
                         let block = positioned(
                             measured,
                             page.layout.content_bounds.left,
                             top,
                             width,
-                            1,
+                            align,
                             text_colour,
                         );
                         top = block.bounds.bottom - if c.args.len() == 4 { n(c, 3)? } else { 0.0 };
@@ -1348,6 +1428,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             | "COLOUR_ALBUM_MARGIN_TXT"
                             | "COLOUR_ALBUM_HEADER"
                             | "COLOUR_ALBUM_TITLE"
+                            | "ALBUM_AUTHOR"
+                            | "ALBUM_TITLE"
                     ) =>
                 {
                     if !pages.is_empty() {

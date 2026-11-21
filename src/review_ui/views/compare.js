@@ -2089,18 +2089,46 @@ function render(options) {
     updateGuide();
   if (!left.length) {
         document.getElementById('leftPos').innerText = 'Current Stamp/Position 0/0';
-        document.getElementById('rightPos').innerText = 'Candidate/Position 0/0';
+        document.getElementById('rightPos').innerText = rightAll.length
+            ? `Candidates: ${rightAll.length} loaded`
+            : 'Candidate/Position 0/0';
     document.getElementById('leftActionBanner').innerHTML = `
         <div class='leftActionTop'>
             <strong>Manual Base Stamp Tools</strong>
             <span class='badge'>No left rows loaded</span>
         </div>
-        <p class='leftActionText'>Add a base/reference item here when you need a watermark image or a missing left-side record before matching Colnect data.${showImagelessLeftRowsDefault ? ' Image-less rows are currently visible.' : ''}</p>
+        <p class='leftActionText'>Add a base/reference item here before matching Colnect data, or create one directly.${showImagelessLeftRowsDefault ? ' Image-less rows are currently visible.' : ''}</p>
         <div class='leftActionBtns'>
             <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
         </div>`;
-    document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
-    document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
+    document.getElementById('leftPanel').innerHTML = rightAll.length
+        ? `<div class='imgph' style='text-align:left; padding:16px;'>
+            <strong>No Base Stamps on Left</strong>
+            <p style='margin-top:8px;'>There are <strong>${rightAll.length} Colnect candidates</strong> loaded, but no left-side base stamps exist yet to match them against.</p>
+            <p style='margin-top:8px;'>Click <strong>Add Base / Watermark Item</strong> above to add your first base stamp, or create a starter record.</p>
+           </div>`
+        : '<div class="imgph">No StampWorld rows with real images found</div>';
+
+    if (!rightAll.length) {
+        document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
+    } else {
+        document.getElementById('rightPanel').innerHTML = `
+            <div class='panelCard'>
+                <div class='panelHead'>
+                    <strong>Colnect Candidates (${rightAll.length})</strong>
+                    <div style='margin-top:6px; font-size:12px;'>Waiting for left base stamp</div>
+                </div>
+                <div class='panelBody'>
+                    <div class='imgph' style='text-align:left; padding:16px;'>
+                        <div><strong>Total candidates loaded:</strong> ${rightAll.length}</div>
+                        <p style='margin-top:8px;'>Colnect stamps were imported successfully! To begin matching and linking them, add at least one base stamp on the left.</p>
+                        <div style='margin-top:14px;'>
+                            <button class='warn' onclick='openLeftEditor("add")'>Add First Base Stamp Now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
     restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
     return;

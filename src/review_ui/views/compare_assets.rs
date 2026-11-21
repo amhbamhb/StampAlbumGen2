@@ -9,6 +9,10 @@ pub(super) fn render_compare_top_html(
     <div class='top'>
         <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
         <span class='badge'>Switch country without closing Review UI</span>
+        <div style='margin-left:auto;display:flex;gap:8px;align-items:center;'>
+            <button id='btnConfigStaleBadge' class='btn-config-stale' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;border-radius:4px;padding:4px 10px;cursor:pointer;' onclick='openConfigStalenessDialog()'>⚙️ New Settings Available</button>
+            <button id='btnUpdateBadge' class='btn-update' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;border-radius:4px;padding:4px 10px;cursor:pointer;' onclick='openUpdateDialog()'>✨ Update Available</button>
+        </div>
     </div>
     <div id='startGuide' class='startGuide'>
         <h2>Start Country Review Session</h2>

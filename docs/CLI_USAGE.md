@@ -61,6 +61,10 @@ Options:
           Remove Linux desktop launcher and icon created by Stamp Album Generator 2, then exit
       --install-desktop-launcher
           Re-enable and install Linux desktop launcher and icon, then exit
+      --check-update
+          Check for available application updates from GitHub Releases and exit
+      --update
+          Automatically download and install the latest update if available, then exit
   -h, --help
           Print help
   -V, --version
