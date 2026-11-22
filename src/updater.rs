@@ -2,6 +2,7 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt::Write as FmtWrite;
+use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, RwLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -490,6 +491,8 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
         error: None,
     });
 
+    let target_exe = std::env::current_exe().ok();
+
     self_replace::self_replace(temp_file.path())
         .map_err(|e| format!("Failed to replace executable: {e}"))?;
 
@@ -507,7 +510,7 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
 
         // Give the UI a moment to read the restarting status
         std::thread::sleep(Duration::from_millis(1500));
-        let _ = restart_application();
+        let _ = restart_application_internal(target_exe.as_deref());
     }
 
     Ok(format!("Successfully updated to v{target_version}"))
@@ -529,12 +532,106 @@ pub fn strip_verbatim_path_prefix(path: &str) -> String {
     }
 }
 
+/// If the executable path was captured after self-replace relocated it to a temporary
+/// name (e.g. `.<hint>.<hash>.__relocated__.exe`), restores the canonical executable path.
+pub fn sanitize_executable_path(path: &Path) -> PathBuf {
+    let file_name = match path.file_name().and_then(|f| f.to_str()) {
+        Some(name) => name,
+        None => return path.to_path_buf(),
+    };
+
+    if file_name.ends_with(".__relocated__.exe")
+        || file_name.ends_with(".__temp__.exe")
+        || file_name.ends_with(".__selfdelete__.exe")
+    {
+        let trimmed = file_name.trim_start_matches('.');
+        if let Some(hint) = trimmed.split('.').next().filter(|s| !s.is_empty()) {
+            let canonical_name = format!("{hint}.exe");
+            if let Some(parent) = path.parent() {
+                return parent.join(canonical_name);
+            }
+        }
+    }
+    path.to_path_buf()
+}
+
+/// Determines the restart arguments to pass to the spawned process, ensuring that
+/// if the process was running in Review UI mode by default (without explicit CLI flags),
+/// `--review-ui` is explicitly preserved on restart even without a console or GUI trigger.
+pub fn build_restart_arguments<I, S>(raw_args: I) -> Vec<String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let mut args: Vec<String> = raw_args
+        .into_iter()
+        .map(|s| s.as_ref().to_string())
+        .collect();
+
+    if !args.iter().any(|a| a == "--review-ui" || a == "-r") {
+        let has_non_review_command = args.iter().any(|a| {
+            a == "--help"
+                || a == "-h"
+                || a == "--version"
+                || a == "-V"
+                || a == "--update"
+                || a == "--check-update"
+                || a == "--source"
+                || a == "-s"
+                || a == "--init-config"
+                || a == "--force-init-config"
+                || a == "--install-desktop-launcher"
+                || a == "--uninstall-desktop-launcher"
+        });
+        if !has_non_review_command {
+            args.push("--review-ui".to_string());
+        }
+    }
+
+    args
+}
+
+/// Builds the batch script content used on Windows to safely detach and restart the application.
+pub fn build_windows_restart_script(exe_path: &Path, args: &[String]) -> String {
+    let exe_str = strip_verbatim_path_prefix(&exe_path.to_string_lossy());
+    let mut exe_cmd = format!("start \"\" \"{}\"", exe_str);
+    for arg in args {
+        let sanitized: String = arg
+            .chars()
+            .filter(|c| !matches!(c, '"' | '&' | '|' | '<' | '>' | '^' | '%' | '\r' | '\n'))
+            .collect();
+        if sanitized.contains(' ') {
+            exe_cmd.push_str(&format!(" \"{}\"", sanitized));
+        } else {
+            exe_cmd.push_str(&format!(" {}", sanitized));
+        }
+    }
+    format!(
+        "@echo off\r\nping 127.0.0.1 -n 3 >nul\r\n{}\r\n(goto) 2>nul & del \"%~f0\"\r\n",
+        exe_cmd
+    )
+}
+
 /// Spawns the updated executable and exits the current process cleanly with socket detachment.
 pub fn restart_application() -> Result<(), String> {
-    let current_exe = std::env::current_exe()
-        .map_err(|e| format!("Could not determine current executable path: {e}"))?;
+    restart_application_internal(None)
+}
 
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
+pub(crate) fn restart_application_internal(target_exe: Option<&Path>) -> Result<(), String> {
+    let current_exe = match target_exe {
+        Some(path) => sanitize_executable_path(path),
+        None => {
+            let exe = std::env::current_exe()
+                .map_err(|e| format!("Could not determine current executable path: {e}"))?;
+            sanitize_executable_path(&exe)
+        }
+    };
+
+    let raw_args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|a| a.to_string_lossy().to_string())
+        .collect();
+    let args = build_restart_arguments(raw_args);
 
     info!(
         "Scheduling application restart for {:?} with args {:?}",
@@ -544,25 +641,47 @@ pub fn restart_application() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        let exe_str = strip_verbatim_path_prefix(&current_exe.to_string_lossy());
-        let mut cmd_line = format!("ping 127.0.0.1 -n 3 >nul & start \"\" \"{}\"", exe_str);
-        for arg in args {
-            let arg_str = arg.to_string_lossy();
-            // Sanitize against command injection: strip quotes and shell metacharacters
-            let sanitized: String = arg_str
-                .chars()
-                .filter(|c| !matches!(c, '"' | '&' | '|' | '<' | '>' | '^' | '\r' | '\n'))
-                .collect();
-            if sanitized.contains(' ') {
-                cmd_line.push_str(&format!(" \"{}\"", sanitized));
-            } else {
-                cmd_line.push_str(&format!(" {}", sanitized));
+        let script_content = build_windows_restart_script(&current_exe, &args);
+        let temp_bat = std::env::temp_dir().join(format!(
+            "stampalbum_restart_{}_{}.bat",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0)
+        ));
+
+        if std::fs::write(&temp_bat, script_content).is_ok() {
+            let _ = std::process::Command::new("cmd")
+                .args(["/c", &temp_bat.to_string_lossy()])
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .spawn();
+        } else {
+            // Fallback: PowerShell command if batch file writing failed
+            let exe_str = strip_verbatim_path_prefix(&current_exe.to_string_lossy());
+            let mut ps_cmd = format!(
+                "Start-Sleep -Seconds 2; Start-Process -FilePath '{}'",
+                exe_str.replace('\'', "''")
+            );
+            if !args.is_empty() {
+                let arg_items: Vec<String> = args
+                    .iter()
+                    .map(|a| format!("'{}'", a.replace('\'', "''")))
+                    .collect();
+                ps_cmd.push_str(&format!(" -ArgumentList @({})", arg_items.join(",")));
             }
+            let _ = std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-WindowStyle",
+                    "Hidden",
+                    "-Command",
+                    &ps_cmd,
+                ])
+                .creation_flags(0x08000000)
+                .spawn();
         }
-        let _ = std::process::Command::new("cmd")
-            .args(["/c", &cmd_line])
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW
-            .spawn();
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -572,7 +691,7 @@ pub fn restart_application() -> Result<(), String> {
         let mut sh_args = vec![exe_str];
         for (i, arg) in args.into_iter().enumerate() {
             sh_script.push_str(&format!(" \"${}\"", i + 1));
-            sh_args.push(arg.to_string_lossy().to_string());
+            sh_args.push(arg);
         }
         let _ = std::process::Command::new("sh")
             .arg("-c")
@@ -635,6 +754,100 @@ mod tests {
         assert_eq!(
             strip_verbatim_path_prefix("/usr/local/bin/stamp_album_gen2"),
             "/usr/local/bin/stamp_album_gen2"
+        );
+    }
+
+    #[test]
+    fn test_build_restart_arguments_defaults_to_review_ui() {
+        let args: Vec<String> = vec![];
+        let res = build_restart_arguments(args);
+        assert_eq!(res, vec!["--review-ui".to_string()]);
+
+        let res_existing = build_restart_arguments(vec!["--review-ui".to_string()]);
+        assert_eq!(res_existing, vec!["--review-ui".to_string()]);
+
+        let res_short = build_restart_arguments(vec!["-r".to_string()]);
+        assert_eq!(res_short, vec!["-r".to_string()]);
+    }
+
+    #[test]
+    fn test_build_restart_arguments_preserves_scraping_and_cli() {
+        let res = build_restart_arguments(vec![
+            "--source".to_string(),
+            "stampworld".to_string(),
+            "--album-name".to_string(),
+            "Malta".to_string(),
+        ]);
+        assert_eq!(
+            res,
+            vec![
+                "--source".to_string(),
+                "stampworld".to_string(),
+                "--album-name".to_string(),
+                "Malta".to_string(),
+            ]
+        );
+
+        let res_help = build_restart_arguments(vec!["--help".to_string()]);
+        assert_eq!(res_help, vec!["--help".to_string()]);
+
+        let res_update = build_restart_arguments(vec!["--update".to_string()]);
+        assert_eq!(res_update, vec!["--update".to_string()]);
+    }
+
+    #[test]
+    fn test_build_restart_arguments_preserves_custom_db() {
+        let res = build_restart_arguments(vec![
+            "--db-path".to_string(),
+            "Albums/Malta/Malta.db".to_string(),
+        ]);
+        assert_eq!(
+            res,
+            vec![
+                "--db-path".to_string(),
+                "Albums/Malta/Malta.db".to_string(),
+                "--review-ui".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_build_windows_restart_script() {
+        let exe = Path::new(r"C:\Program Files\StampAlbum\stamp_album_gen2.exe");
+        let args = vec![
+            "--review-ui".to_string(),
+            "Albums/My Album/My Album.db".to_string(),
+        ];
+        let script = build_windows_restart_script(exe, &args);
+
+        assert!(script.starts_with("@echo off\r\nping 127.0.0.1 -n 3 >nul\r\n"));
+        assert!(script.contains(
+            r#"start "" "C:\Program Files\StampAlbum\stamp_album_gen2.exe" --review-ui "Albums/My Album/My Album.db""#
+        ));
+        assert!(script.ends_with("(goto) 2>nul & del \"%~f0\"\r\n"));
+        // Ensure no escaped quotes like \"\" exist
+        assert!(!script.contains(r#"\""#));
+    }
+
+    #[test]
+    fn test_sanitize_executable_path() {
+        let normal = Path::new(r"C:\Apps\StampAlbum\stamp_album_gen2.exe");
+        assert_eq!(sanitize_executable_path(normal), normal);
+
+        let relocated = Path::new(
+            r"C:\Apps\StampAlbum\.stamp_album_gen2.0123456789abcdef0123456789abcdef.__relocated__.exe",
+        );
+        assert_eq!(
+            sanitize_executable_path(relocated),
+            PathBuf::from(r"C:\Apps\StampAlbum\stamp_album_gen2.exe")
+        );
+
+        let temp = Path::new(
+            r"C:\Apps\StampAlbum\.stamp_album_gen2.0123456789abcdef0123456789abcdef.__temp__.exe",
+        );
+        assert_eq!(
+            sanitize_executable_path(temp),
+            PathBuf::from(r"C:\Apps\StampAlbum\stamp_album_gen2.exe")
         );
     }
 }
