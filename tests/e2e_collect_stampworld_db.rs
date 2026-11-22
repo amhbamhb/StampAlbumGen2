@@ -142,19 +142,20 @@ async fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     );
 
     // Now open the DB the collector created and assert two rows exist for the series
-    // Collector builds DB path by dropping "/images" from images_dir and appending "{album_basename}.db"
+    // Collector builds DB path using images_path.parent() and appending "{album_basename}.db"
     // where album_basename is the basename of the images parent folder (fallback to site_name if missing).
-    let db_parent = images_dir_str.replace("/images", "");
-    let album_basename = std::path::Path::new(&db_parent)
+    let images_path = std::path::Path::new(&images_dir_str);
+    let db_parent = images_path.parent().unwrap_or(images_path);
+    let album_basename = db_parent
         .file_name()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
         .unwrap_or_else(|| site_name.replace('/', "-"));
-    let db_path = format!("{}/{}.db", db_parent, album_basename);
+    let db_path = db_parent.join(format!("{}.db", album_basename));
 
     // We expect the collector to have created the DB file under the images parent.
 
-    let conn = stamp_album_db::init_db(&db_path).expect("init db");
+    let conn = stamp_album_db::init_db(&db_path.to_string_lossy()).expect("init db");
     // The collector stores the series string as extracted from the header (includes year prefix)
     let stored_series = "1970  Example Series";
     // Count rows directly to avoid mapping NULL columns for placeholder rows

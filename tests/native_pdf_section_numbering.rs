@@ -19,6 +19,7 @@ fn fixture() -> PathBuf {
 
 fn section_config(start: i32) -> Result<NativePdfConfig> {
     let source = include_str!("../config_template.toml")
+        .replace("\r\n", "\n")
         .replace(
             "[native_pdf.footer_number]\nenabled = false",
             "[native_pdf.footer_number]\nenabled = true",
@@ -78,7 +79,7 @@ fn templates_supply_document_default_and_local_start() -> Result<()> {
 
 #[test]
 fn section_scope_requires_a_start_and_supported_scope() -> Result<()> {
-    let template = include_str!("../config_template.toml");
+    let template = include_str!("../config_template.toml").replace("\r\n", "\n");
     for invalid in [
         template.replace("scope = \"document\"", "scope = \"year\""),
         template
@@ -115,10 +116,12 @@ fn section_markers_require_enabled_native_section_scope() -> Result<()> {
     let directory = tempfile::tempdir()?;
     let output = directory.path().join("numbering.pdf");
     assert!(album.write_pdf(&output).is_err());
-    let document_config = include_str!("../config_template.toml").replace(
-        "[native_pdf.footer_number]\nenabled = false",
-        "[native_pdf.footer_number]\nenabled = true",
-    );
+    let document_config = include_str!("../config_template.toml")
+        .replace("\r\n", "\n")
+        .replace(
+            "[native_pdf.footer_number]\nenabled = false",
+            "[native_pdf.footer_number]\nenabled = true",
+        );
     assert!(
         album
             .write_pdf_with_config(&NativePdfConfig::from_toml(&document_config)?, &output)

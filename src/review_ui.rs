@@ -2068,12 +2068,15 @@ fn create_bootstrap_country_or_theme(
     if count == 0 {
         let placeholder_path = images_dir.join("placeholder.jpg");
         if !placeholder_path.exists() {
-            if let Err(e) = fs::write(&placeholder_path, bundled_placeholder_jpg()) {
-                log_runtime_event(&format!(
-                    "Bootstrap: warning: failed to write starter placeholder image {}: {}",
-                    placeholder_path.display(),
-                    e
-                ));
+            match fs::write(&placeholder_path, bundled_placeholder_jpg()) {
+                Ok(()) => {}
+                Err(e) => {
+                    log_runtime_event(&format!(
+                        "Bootstrap: warning: failed to write starter placeholder image {}: {}",
+                        placeholder_path.display(),
+                        e
+                    ));
+                }
             }
         }
         if let Err(e) = conn.execute(

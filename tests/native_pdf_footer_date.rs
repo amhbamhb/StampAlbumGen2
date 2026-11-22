@@ -472,7 +472,8 @@ fn defaults_enablement_snapshots_and_colour_precedence_are_explicit() -> Result<
         include_str!("../config_template.toml"),
         include_str!("../config_full_example.toml"),
     ] {
-        let disabled = NativePdfConfig::from_toml(source)?;
+        let source = source.replace("\r\n", "\n");
+        let disabled = NativePdfConfig::from_toml(&source)?;
         assert!(disabled.page_settings.resolve(1)?.footer_date.is_none());
         let enabled = NativePdfConfig::from_toml(&source.replace(
             "[native_pdf.footer_date]\nenabled = false",

@@ -534,10 +534,12 @@ pub fn strip_verbatim_path_prefix(path: &str) -> String {
 
 /// If the executable path was captured after self-replace relocated it to a temporary
 /// name (e.g. `.<hint>.<hash>.__relocated__.exe`), restores the canonical executable path.
+/// Handles both Windows (`\`) and Unix (`/`) path separators safely.
 pub fn sanitize_executable_path(path: &Path) -> PathBuf {
-    let file_name = match path.file_name().and_then(|f| f.to_str()) {
-        Some(name) => name,
-        None => return path.to_path_buf(),
+    let path_str = path.to_string_lossy();
+    let (dir_part, file_name) = match path_str.rfind(['/', '\\']) {
+        Some(idx) => (&path_str[..=idx], &path_str[idx + 1..]),
+        None => ("", path_str.as_ref()),
     };
 
     if file_name.ends_with(".__relocated__.exe")
@@ -547,9 +549,7 @@ pub fn sanitize_executable_path(path: &Path) -> PathBuf {
         let trimmed = file_name.trim_start_matches('.');
         if let Some(hint) = trimmed.split('.').next().filter(|s| !s.is_empty()) {
             let canonical_name = format!("{hint}.exe");
-            if let Some(parent) = path.parent() {
-                return parent.join(canonical_name);
-            }
+            return PathBuf::from(format!("{dir_part}{canonical_name}"));
         }
     }
     path.to_path_buf()
@@ -848,6 +848,21 @@ mod tests {
         assert_eq!(
             sanitize_executable_path(temp),
             PathBuf::from(r"C:\Apps\StampAlbum\stamp_album_gen2.exe")
+        );
+
+        let unix_relocated = Path::new(
+            "/usr/local/bin/.stamp_album_gen2.0123456789abcdef0123456789abcdef.__relocated__.exe",
+        );
+        assert_eq!(
+            sanitize_executable_path(unix_relocated),
+            PathBuf::from("/usr/local/bin/stamp_album_gen2.exe")
+        );
+
+        let bare =
+            Path::new(".stamp_album_gen2.0123456789abcdef0123456789abcdef.__relocated__.exe");
+        assert_eq!(
+            sanitize_executable_path(bare),
+            PathBuf::from("stamp_album_gen2.exe")
         );
     }
 }

@@ -194,10 +194,12 @@ fn native_overrides_restore_and_preserve_frame_geometry_with_both_paginators() -
 
 #[test]
 fn configured_document_numbering_keeps_per_page_bounds() -> Result<(), String> {
-    let source = include_str!("../config_template.toml").replace(
-        "[native_pdf.footer_number]\nenabled = false",
-        "[native_pdf.footer_number]\nenabled = true",
-    );
+    let source = include_str!("../config_template.toml")
+        .replace("\r\n", "\n")
+        .replace(
+            "[native_pdf.footer_number]\nenabled = false",
+            "[native_pdf.footer_number]\nenabled = true",
+        );
     let config = NativePdfConfig::from_toml(&source)?;
     let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
     let output = temp.path().join("numbered.pdf");
@@ -322,6 +324,7 @@ fn section_numbering_preserves_override_and_reset_layouts() -> Result<(), String
         );
     let config = NativePdfConfig::from_toml(
         &include_str!("../config_template.toml")
+            .replace("\r\n", "\n")
             .replace(
                 "[native_pdf.footer_number]\nenabled = false",
                 "[native_pdf.footer_number]\nenabled = true",

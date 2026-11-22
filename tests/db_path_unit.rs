@@ -67,20 +67,24 @@ async fn collector_creates_db_at_expected_path() {
     .await;
 
     // Compute expected DB path the same way the collector does
-    let db_parent = images_dir_str.replace("/images", "");
-    let album_basename = std::path::Path::new(&db_parent)
+    let images_path = std::path::Path::new(&images_dir_str);
+    let db_parent = images_path.parent().unwrap_or(images_path);
+    let album_basename = db_parent
         .file_name()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
         .unwrap_or_else(|| site_name.replace('/', "-"));
-    let db_path = format!("{}/{}.db", db_parent, album_basename);
+    let db_path = db_parent.join(format!("{}.db", album_basename));
 
     // Assert the DB file exists and is a regular file
-    let p = std::path::Path::new(&db_path);
     assert!(
-        p.exists(),
+        db_path.exists(),
         "Expected DB file at {}, but it does not exist",
-        db_path
+        db_path.display()
     );
-    assert!(p.is_file(), "Expected DB path to be a file: {}", db_path);
+    assert!(
+        db_path.is_file(),
+        "Expected DB path to be a file: {}",
+        db_path.display()
+    );
 }
