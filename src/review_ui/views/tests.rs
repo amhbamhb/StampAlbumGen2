@@ -138,3 +138,11 @@ fn both_screens_embed_config_staleness_dialog_and_hooks() {
         assert!(html.contains("Built-in Defaults Apply Automatically"));
     }
 }
+
+#[test]
+fn both_screens_embed_help_manual_button() {
+    for html in [render_bootstrap_html(None), render_html(&minimal_payload())] {
+        assert!(html.contains("/help-manual.pdf"));
+        assert!(html.contains("Help Manual"));
+    }
+}

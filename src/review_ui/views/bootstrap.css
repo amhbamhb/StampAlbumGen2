@@ -35,6 +35,8 @@ button.btn-refresh { background: #6a8faa; color: #fff; border-color: #557888; }
 button.btn-config { background: #7a68c0; color: #fff; border-color: #6554a8; }
 button.btn-pdf { background: #c87c28; color: #fff; border-color: #a8641a; }
 button.btn-import { background: #2da070; color: #fff; border-color: #228458; }
+button.btn-help, a.btn-help { background: #0284c7; color: #fff; border-color: #0369a1; text-decoration: none; }
+button.btn-help:hover, a.btn-help:hover { background: #0369a1; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(2, 132, 199, 0.25); }
 button.btn-create-theme { background: #107c6f; color: #fff; border-color: #0c6157; font-weight: 600; }
 button.btn-create-theme:hover { background: #0d685d; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(16, 124, 111, 0.25); }
 button:hover { background: #edf6ff; color: #131d4d; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(21, 66, 95, 0.12); }

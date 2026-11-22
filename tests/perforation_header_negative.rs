@@ -9,6 +9,8 @@ use tempfile::tempdir;
 async fn test_perforation_column_absent() {
     let tmp = tempdir().expect("tempdir");
     let orig_cwd = env::current_dir().expect("cwd");
+    let prev_root = env::var_os("STAMP_ALBUMS_ROOT");
+    unsafe { env::set_var("STAMP_ALBUMS_ROOT", tmp.path().join("Albums")) };
     env::set_current_dir(tmp.path()).expect("chdir to tmp");
 
     fs::create_dir_all(tmp.path().join("Albums/TestAlbum")).expect("create album dir");
@@ -51,7 +53,7 @@ async fn test_perforation_column_absent() {
     let db_path = tmp.path().join("Albums/TestAlbum/TestAlbum.db");
     stamp_album_gen2::file_utils::set_db_path_from_cli(db_path.to_str().unwrap());
 
-    stamp_album_gen2::album_globals::generate_album_output_conn(
+    let output_file = stamp_album_gen2::album_globals::generate_album_output_conn(
         &conn,
         "TestAlbum",
         None::<fn(usize)>,
@@ -60,7 +62,6 @@ async fn test_perforation_column_absent() {
     )
     .await;
 
-    let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1974-1974.txt");
     assert!(
         output_file.exists(),
         "Expected output file to exist: {}",
@@ -76,4 +77,8 @@ async fn test_perforation_column_absent() {
     );
 
     env::set_current_dir(orig_cwd).expect("restore cwd");
+    match prev_root {
+        Some(val) => unsafe { env::set_var("STAMP_ALBUMS_ROOT", val) },
+        None => unsafe { env::remove_var("STAMP_ALBUMS_ROOT") },
+    }
 }
