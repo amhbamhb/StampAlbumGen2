@@ -1,4 +1,4 @@
-# Stamp Album Generator v1.15.3 Release Notes
+# Stamp Album Generator v1.15.4 Release Notes
 
 ## Overview
 
@@ -142,7 +142,7 @@ For issues or questions, please check the embedded documentation in the source c
 ---
 
 **Release Date**: 2026-11-22
-**Version**: 1.15.3
+**Version**: 1.15.4
 **Build**: Release (optimized)</content>
 
 ---
@@ -164,6 +164,6 @@ This patch fixes a header aggregation bug and improves placeholder image sizing 
 - A small lint/cleanup pass remains (non-functional dead_code warnings) and can be addressed in a follow-up.
 
 **Release Date**: 2026-11-22
-**Version**: 1.15.3
+**Version**: 1.15.4
 
 <parameter name="filePath">RELEASE_NOTES.md
