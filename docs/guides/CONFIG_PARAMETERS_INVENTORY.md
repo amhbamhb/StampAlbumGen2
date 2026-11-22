@@ -567,7 +567,7 @@ The `[header_formatting]` section can contain parameters that may override top-l
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `[updates].check_on_startup` | `bool` | `true` | Automatically checks GitHub Releases for newer application versions on startup in the background (cached for 6 hours). Surfaces an update badge and modal in the Review UI. |
+| `[updates].check_on_startup` | `bool` | `true` | Automatically checks GitHub Releases for newer application versions on startup in the background (cached for 6 hours). Surfaces an update badge and modal in the Review UI, which updates both the executable binary and the Help Manual PDF (`StampAlbumGenerator2HelpManual.pdf`). |
 
 ### Layout Parameters (Medium Priority)  
 

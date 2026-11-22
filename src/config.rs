@@ -450,11 +450,18 @@ fn ensure_default_files(
     // Keep the installed manual synchronized with the version embedded in the
     // executable so missing or outdated manuals are restored on startup.
     if fs::read(pdf_abs).ok().as_deref() != Some(EMBEDDED_PDF_HELP) {
-        fs::write(pdf_abs, EMBEDDED_PDF_HELP)?;
-        log::info!(
-            "Updated manual PDF from embedded version at {}",
-            pdf_abs.display()
-        );
+        if let Err(e) = fs::write(pdf_abs, EMBEDDED_PDF_HELP) {
+            log::warn!(
+                "Could not update manual PDF at {} (file may be open in a viewer): {}",
+                pdf_abs.display(),
+                e
+            );
+        } else {
+            log::info!(
+                "Updated manual PDF from embedded version at {}",
+                pdf_abs.display()
+            );
+        }
     }
 
     Ok(())

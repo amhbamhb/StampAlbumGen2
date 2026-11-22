@@ -8,6 +8,10 @@ fn bundled_favicon_png() -> &'static [u8] {
     include_bytes!("../../assets/icons/generated/MainIcon.ico")
 }
 
+fn bundled_app_icon() -> &'static [u8] {
+    include_bytes!("../../assets/new/app.ico")
+}
+
 /// Returns the JSON body for `GET /api/ping`.
 /// Used by `probe_for_our_instance()` on startup to detect a running copy.
 fn ping_response_json() -> String {
@@ -412,6 +416,124 @@ fn handle_config_staleness_request(request: tiny_http::Request) -> Option<tiny_h
     None
 }
 
+fn get_help_manual_bytes() -> Vec<u8> {
+    let local_file = Path::new("StampAlbumGenerator2HelpManual.pdf");
+    if local_file.is_file() {
+        if let Ok(bytes) = std::fs::read(local_file) {
+            return bytes;
+        }
+    }
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(parent) = exe_path.parent() {
+            let exe_help = parent.join("StampAlbumGenerator2HelpManual.pdf");
+            if exe_help.is_file() {
+                if let Ok(bytes) = std::fs::read(exe_help) {
+                    return bytes;
+                }
+            }
+        }
+    }
+    crate::config::embedded_pdf_help().to_vec()
+}
+
+fn handle_help_manual_request(request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let path = request.url().split('?').next().unwrap_or("");
+    if method == Method::Get
+        && (path == "/help-manual.pdf" || path == "/api/help-manual.pdf" || path == "/help-manual")
+    {
+        let pdf_bytes = get_help_manual_bytes();
+        let mut response = Response::from_data(pdf_bytes).with_status_code(StatusCode(200));
+        if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], &b"application/pdf"[..]) {
+            response = response.with_header(header);
+        }
+        if let Ok(header) = Header::from_bytes(
+            &b"Content-Disposition"[..],
+            &b"inline; filename=\"StampAlbumGenerator2HelpManual.pdf\""[..],
+        ) {
+            response = response.with_header(header);
+        }
+        if let Ok(header) = Header::from_bytes(
+            &b"Cache-Control"[..],
+            &b"no-cache, no-store, must-revalidate"[..],
+        ) {
+            response = response.with_header(header);
+        }
+        if let Err(error) = request.respond(response) {
+            log_runtime_event(&format!(
+                "Failed responding to help manual request: {error}"
+            ));
+        }
+        return None;
+    }
+
+    if method == Method::Post && path == "/api/open-help-manual" {
+        let mut pdf_path = PathBuf::from("StampAlbumGenerator2HelpManual.pdf");
+        if !pdf_path.is_file() {
+            if let Ok(exe_path) = std::env::current_exe() {
+                if let Some(parent) = exe_path.parent() {
+                    let exe_help = parent.join("StampAlbumGenerator2HelpManual.pdf");
+                    if exe_help.is_file() {
+                        pdf_path = exe_help;
+                    }
+                }
+            }
+        }
+
+        let launch_target = if pdf_path.is_file() {
+            pdf_path
+        } else {
+            let temp_dir = std::env::temp_dir();
+            let temp_help = temp_dir.join("StampAlbumGenerator2HelpManual.pdf");
+            let _ = std::fs::write(&temp_help, crate::config::embedded_pdf_help());
+            temp_help
+        };
+
+        let opened = open_local_path(&launch_target);
+        let resp_json = if opened {
+            serde_json::json!({ "ok": true, "message": "Opened Help Manual in default viewer." })
+        } else {
+            serde_json::json!({ "ok": false, "message": "Failed to open Help Manual with system viewer." })
+        };
+        let mut response =
+            Response::from_string(resp_json.to_string()).with_status_code(if opened {
+                StatusCode(200)
+            } else {
+                StatusCode(500)
+            });
+        if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+            response = response.with_header(h);
+        }
+        if let Err(error) = request.respond(response) {
+            log_runtime_event(&format!(
+                "Failed responding to open help manual request: {error}"
+            ));
+        }
+        return None;
+    }
+
+    Some(request)
+}
+
+fn handle_app_icon_request(request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let path = request.url().split('?').next().unwrap_or("");
+    if method == Method::Get
+        && (path == "/app-icon.ico" || path == "/app-icon.png" || path == "/assets/app.ico")
+    {
+        let mut resp = Response::from_data(bundled_app_icon().to_vec());
+        if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"image/x-icon"[..]) {
+            resp = resp.with_header(h);
+        }
+        if let Ok(h) = Header::from_bytes(&b"Cache-Control"[..], &b"public, max-age=86400"[..]) {
+            resp = resp.with_header(h);
+        }
+        let _ = request.respond(resp);
+        return None;
+    }
+    Some(request)
+}
+
 fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
     let path = request.url().split('?').next().unwrap_or("");
     if path != "/api/stampworld-country-url"
@@ -487,6 +609,12 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         };
         let Some(request) = handle_config_staleness_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_help_manual_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_app_icon_request(request) else {
             continue;
         };
         let Some(request) = external_album_api::handle(request) else {
@@ -1536,6 +1664,12 @@ pub(super) fn serve_review_requests(
             continue;
         };
         let Some(request) = handle_config_staleness_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_help_manual_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_app_icon_request(request) else {
             continue;
         };
         let Some(mut request) = handle_country_url_request(request) else {

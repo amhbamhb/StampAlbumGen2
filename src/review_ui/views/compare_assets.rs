@@ -10,6 +10,7 @@ pub(super) fn render_compare_top_html(
         <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
         <span class='badge'>Switch country without closing Review UI</span>
         <div style='margin-left:auto;display:flex;gap:8px;align-items:center;'>
+            <a href='/help-manual.pdf' target='_blank' rel='noopener noreferrer' id='btnHelpManualTop' class='btn-help' title='Open Help Manual (PDF)' style='display:inline-flex;align-items:center;gap:4px;text-decoration:none;background:#0284c7;color:#fff;border:1px solid #0369a1;font-weight:600;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:13px;'>❓ Help Manual</a>
             <button id='btnConfigStaleBadge' class='btn-config-stale' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;border-radius:4px;padding:4px 10px;cursor:pointer;' onclick='openConfigStalenessDialog()'>⚙️ New Settings Available</button>
             <button id='btnUpdateBadge' class='btn-update' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;border-radius:4px;padding:4px 10px;cursor:pointer;' onclick='openUpdateDialog()'>✨ Update Available</button>
         </div>
@@ -28,7 +29,12 @@ pub(super) fn render_compare_top_html(
             <button class='guideFieldOptionsButton' onclick='scrollToFilters()'>Review Field Options</button>
             <button class='guideComparePanelsButton' onclick='scrollToPanels()'>Jump To Compare Panels</button>
             <button class='neutral guideOpenCountryFolderButton' onclick='openCountryFolder()'>Open Country Folder</button>
+            <a href='/help-manual.pdf' target='_blank' rel='noopener noreferrer' id='btnHelpManualGuide' class='neutral guideHelpManualButton' title='Open Help Manual (PDF)' style='display:inline-flex;align-items:center;gap:4px;text-decoration:none;padding:7px 11px;border-radius:8px;border:1px solid #0369a1;background:#0284c7;color:#fff;font-weight:600;cursor:pointer;'>❓ Help Manual</a>
             <button class='neutral reviewNavigationExitButton' onclick='closeReviewUi()'>Close Review UI and exit the program</button>
+        </div>
+        <div style='margin-top:14px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;'>
+            <img src='/app-icon.ico' alt='SAG2' style='width:24px;height:24px;vertical-align:middle;object-fit:contain;' />
+            <span style='font-size:12px;color:#64748b;font-weight:600;'>Stamp Album Generator 2</span>
         </div>
   </div>
     {runtime_log_compare_panel_html}"#,
@@ -42,6 +48,7 @@ pub(super) fn render_compare_navigation_html() -> String {
                     <div class='sessionSectionTitle'>Navigation</div>
                     <div class='sessionRow'>
                         <button class='primary reviewNavigationBackButton' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
+                        <a href='/help-manual.pdf' target='_blank' rel='noopener noreferrer' id='btnHelpManualNav' class='btn-help' title='Open Help Manual (PDF)' style='display:inline-flex;align-items:center;gap:4px;text-decoration:none;padding:7px 11px;border-radius:8px;border:1px solid #0369a1;background:#0284c7;color:#fff;font-weight:600;font-size:13px;cursor:pointer;'>❓ Help Manual</a>
                         <button class='neutral reviewNavigationExitButton' onclick='closeReviewUi()'>Close Review UI and exit the program</button>
                     </div>
                     <div id='status' class='sessionStatusBox sessionStatusSlate'>Ready</div>
