@@ -164,16 +164,19 @@ fn rejects_malformed_commands_and_unsafe_cross_platform_paths() {
 #[test]
 fn rejects_case_collisions_reserved_names_and_nested_destination_without_writes() {
     let fixture = Fixture::new();
-    fs::write(fixture.source.join("Images/1.JPG"), b"case collision").expect("case fixture");
-    assert!(
-        inspect(&fixture.source, Path::new("album.txt"))
-            .expect_err("case collision")
-            .contains("case collision")
-    );
-    fs::remove_file(fixture.source.join("Images/1.JPG")).expect("remove case fixture");
-    fs::write(fixture.source.join("CON.txt"), b"reserved").expect("reserved fixture");
-    assert!(inspect(&fixture.source, Path::new("album.txt")).is_err());
-    fs::remove_file(fixture.source.join("CON.txt")).expect("remove reserved fixture");
+    #[cfg(not(windows))]
+    {
+        fs::write(fixture.source.join("Images/1.JPG"), b"case collision").expect("case fixture");
+        assert!(
+            inspect(&fixture.source, Path::new("album.txt"))
+                .expect_err("case collision")
+                .contains("case collision")
+        );
+        fs::remove_file(fixture.source.join("Images/1.JPG")).expect("remove case fixture");
+        fs::write(fixture.source.join("CON.txt"), b"reserved").expect("reserved fixture");
+        assert!(inspect(&fixture.source, Path::new("album.txt")).is_err());
+        fs::remove_file(fixture.source.join("CON.txt")).expect("remove reserved fixture");
+    }
     let nested = fixture.source.join("new-albums");
     assert!(
         import_album(

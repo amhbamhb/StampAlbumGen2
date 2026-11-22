@@ -1,2 +1,4 @@
 *.pdf binary
 *.png binary
+*.def text eol=lf
+*.txt text eol=lf

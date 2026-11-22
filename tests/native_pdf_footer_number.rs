@@ -128,7 +128,8 @@ fn numbering_defaults_enablement_precedence_and_snapshots_are_explicit() -> Resu
         include_str!("../config_template.toml"),
         include_str!("../config_full_example.toml"),
     ] {
-        let disabled = NativePdfConfig::from_toml(source)?;
+        let source = source.replace("\r\n", "\n");
+        let disabled = NativePdfConfig::from_toml(&source)?;
         assert!(disabled.page_settings.resolve(1)?.footer_number.is_none());
         let source = source.replace(
             "[native_pdf.footer_number]\nenabled = false",

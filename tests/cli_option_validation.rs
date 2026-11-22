@@ -253,7 +253,10 @@ fn test_cli_database_path_handling() {
     );
     println!("  ✓ Non-existent DB file creation attempted");
 
-    // Invalid directory path
+    // Invalid directory path that is guaranteed to fail across platforms
+    #[cfg(windows)]
+    let invalid_path = "Z:\\nonexistent_dir_invalid<?>\\test.db";
+    #[cfg(not(windows))]
     let invalid_path = "/definitely/does/not/exist/test.db";
     let (exit_code, _stdout, stderr) =
         run_cli_with_args(&["--db-path", invalid_path, "--album-name", "TestAlbum"]);

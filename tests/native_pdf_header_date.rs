@@ -409,7 +409,8 @@ fn defaults_disabled_validation_snapshot_and_unapplied_keys_are_explicit() -> Re
         include_str!("../config_template.toml"),
         include_str!("../config_full_example.toml"),
     ] {
-        let config = NativePdfConfig::from_toml(source)?;
+        let source = source.replace("\r\n", "\n");
+        let config = NativePdfConfig::from_toml(&source)?;
         assert!(config.page_settings.resolve(1)?.header_date.is_none());
         assert!(config.page_settings.capture_generation_date().is_none());
         let config = NativePdfConfig::from_toml(&source.replace(

@@ -161,9 +161,10 @@ fn manual_rows_parse_and_replace_only_the_same_staged_identity() {
 fn documented_example_is_accepted_by_the_existing_parser() {
     let runtime = tempfile::tempdir().expect("runtime folder");
     let example = TEMPLATE_GUIDE
-        .split_once("```csv\n")
+        .split_once("```csv")
         .expect("CSV example start")
         .1
+        .trim_start_matches(|c| c == '\r' || c == '\n')
         .split_once("```")
         .expect("CSV example end")
         .0;
