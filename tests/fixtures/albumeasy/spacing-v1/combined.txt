@@ -1,16 +1,17 @@
-# Combine the same fractional values; content is identical across valid probes.
+# ALBUM_PAGES_SPACING conformance: combined horizontal and vertical spacing.
 ALBUM_PAGES_SIZE (210.0 297.0)
 ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
 ALBUM_PAGES_SPACING (6.25 8.75)
 ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
-STAMP_BOXES_SIZE_ADJUST (0.0)
+ALBUM_PAGES_TITLE (TB 16 "WORLDWIDE STAMP COLLECTION" 4)
+STAMP_BOXES_SIZE_ADJUST (4.0)
+
 PAGE_START
-PAGE_TEXT (HN 10 "SPACING-V1 / FIRST")
-PAGE_TEXT (HN 10 "SPACING-V1 / SECOND")
+PAGE_TEXT_CENTRE (HN 11 "SPACING-V1 / COMBINED (6.25mm H, 8.75mm V)" 4)
 ROW_ALIGN_TOP
-ROW_START_JS (HN 10 0.2)
-STAMP_ADD (25.0 20.0 "" "" "" "")
-STAMP_ADD (30.0 25.0 "" "" "" "")
-ROW_START_JS (HN 10 0.2)
-STAMP_ADD (25.0 20.0 "" "" "" "")
-STAMP_ADD (30.0 25.0 "" "" "" "")
+ROW_START_FS (HN 8 0.25 6.25)
+STAMP_ADD_IMG (40.0 30.0 "images/san-marino.jpg" "" "" "San Marino 2024 Official Commemorative Issue")
+STAMP_ADD_IMG (42.0 25.0 "images/new-zealand.jpg" "" "" "New Zealand Royal Philatelic Health Foundation")
+ROW_START_FS (HN 8 0.25 6.25)
+STAMP_ADD_IMG (25.0 39.5 "images/malta.jpg" "" "" "Malta Queen Elizabeth II Historical Definitive")
+STAMP_ADD_IMG (26.0 31.0 "images/sweden.jpg" "" "" "Sweden Royal Postal Heritage Commemorative")

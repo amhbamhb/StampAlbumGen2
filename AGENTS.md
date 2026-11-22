@@ -142,7 +142,11 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
   - For each new item, fixture family, command implementation, or bug fix:
     1. Create a dedicated GitHub issue first using `gh issue create --repo amhbamhb/StampAlbumGen2 --title "<title>" --body "<details>"`.
     2. Create and switch to a dedicated branch for that item: `feature/issue-<num>-<short-name>` (or `fix/issue-<num>-<short-name>`).
-    3. Complete implementation, automated tests, fixture documentation, and website gallery synchronization.
+    3. Complete implementation, automated tests, fixture documentation, and website gallery synchronization:
+       - **Mandatory Native PDF Generation**: Always generate and save the actual PDF version of each variation using the native-pdf engine (`*-native.pdf` and `*-raw-native.pdf`) so maintainers can visually inspect and review the visual rendering.
+       - **Dual Documentation (User-Friendly & Detailed)**: Always author documentation in both easy, user-focused language for stamp collectors and comprehensive technical details (parameters, coordinates, command grammar, and reference provenance).
+       - **Keep PDFs and Gallery Updated**: Whenever changes occur, regenerate the native PDFs and synchronize all source files, rendered PDFs, and gallery entries to the website repository (`stampalbumgenerator2-site`).
+       - **Standard Page Size (US Letter Default)**: The standard default page size for documents, album generators, and examples is **US Letter** (`215.9 × 279.4 mm` / `8.5 × 11.0 in`), unless the specific fixture or test is explicitly testing A4 (`210.0 × 297.0 mm`) or other custom dimensions.
     4. Reference the issue in commits: `feat: ... (fixes #<num>)` or `fix: ... (fixes #<num>)`.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.

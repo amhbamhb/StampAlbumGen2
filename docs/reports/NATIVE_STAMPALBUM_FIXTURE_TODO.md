@@ -18,10 +18,10 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 | **Total Command Fixture Families** | **43** | All 43 integrated in website gallery |
 | **Total Reference Output PDFs** | **222** | All 222 verified against AlbumEasy 4.5.0 |
 | **Total AlbumEasy `.txt` Source Files** | **198** | Available for download |
-| **Existing `.stampalbum` Source Files** | **67** | 20 fixtures have native coverage |
-| **Fixtures with Native `.stampalbum` Files** | **20 / 43 (47%)** | Complete or partial native variations |
-| **Fixtures Missing `.stampalbum` Files** | **23 / 43 (53%)** | **TODO: Native files to be created** |
-| **Total Variations Missing `.stampalbum` Files** | **~155** | To be authored as Pass 1 (raw) and Pass 2 (native) |
+| **Existing `.stampalbum` Source Files** | **75** | 21 fixtures have native coverage |
+| **Fixtures with Native `.stampalbum` Files** | **21 / 43 (49%)** | Complete or partial native variations |
+| **Fixtures Missing `.stampalbum` Files** | **22 / 43 (51%)** | **TODO: Native files to be created** |
+| **Total Variations Missing `.stampalbum` Files** | **~147** | To be authored as Pass 1 (raw) and Pass 2 (native) |
 
 ---
 
@@ -29,7 +29,7 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 
 | Category | Fixtures | Completed | Partial | Missing | Status |
 |---|---|---|---|---|---|
-| **1. Page Setup & Layout** | 6 | 2 | 1 | 3 | In Progress |
+| **1. Page Setup & Layout** | 6 | 3 | 1 | 2 | In Progress |
 | **2. Page Borders & Decorative Framing** | 3 | 0 | 0 | 3 | Pending |
 | **3. Headers, Footers & Titles** | 10 | 1 | 4 | 5 | In Progress |
 | **4. Stamp Frames, Shapes & Rows** | 5 | 0 | 0 | 5 | Pending |
@@ -37,7 +37,7 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 | **6. Text, Headings & Captions** | 4 | 1 | 0 | 3 | In Progress |
 | **7. Settings & Pagination** | 4 | 0 | 3 | 1 | In Progress |
 | **8. Real Stamp Collections** | 6 | 5 | 1 | 0 | Mostly Complete |
-| **Totals** | **43** | **9** | **11** | **23** | **20 Active / 23 TODO** |
+| **Totals** | **43** | **10** | **11** | **22** | **21 Active / 22 TODO** |
 
 ---
 
@@ -49,7 +49,7 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 |---|---|---|---|---|
 | `page-size-v1` | 4 | 8 (`a4-portrait`, `a4-portrait-raw`, `a4-landscape`, `a4-landscape-raw`, `us-letter`, `us-letter-raw`, `fractional`, `fractional-raw`) | **None (Complete)** | `ALBUM_PAGES_SIZE` |
 | `margins-v1` | 4 | 8 (`even-override`, `even-override-raw`, `symmetric`, `symmetric-raw`, `asymmetric`, `asymmetric-raw`, `fractional`, `fractional-raw`) | **None (Complete)** | `ALBUM_PAGES_MARGINS`, `ALBUM_PAGES_MARGINSE` |
-| `spacing-v1` | 4 | 0 | `combined`, `horizontal`, `vertical`, `zero` | `ALBUM_PAGES_SPACING` |
+| `spacing-v1` | 4 | 8 (`combined`, `combined-raw`, `horizontal`, `horizontal-raw`, `vertical`, `vertical-raw`, `zero`, `zero-raw`) | **None (Complete)** | `ALBUM_PAGES_SPACING` |
 | `page-start-v1` | 9 | 5 (`basic`, `group-two-pages`, `group`, `offset-start`, `two-pages`) | `direct-starts`, `group-parameters`, `reusable-templates` | `PAGE_START`, `PAGE_START_GROUP_BEGIN/END` |
 | `page-start-var-v1` | 5 | 2 (`var-direct`, `var-group`) | `var-zero`, `var-horizontal-only`, `var-vertical-only` | `PAGE_START_VAR` |
 | `crop-marks-v1` | 9 | 0 | `crop-colour`, `crop-custom`, `crop-default`, `crop-disabled`, `crop-landscape`, `crop-one`, `crop-three`, `crop-two`, `crop-zero` | `ALBUM_PAGES_CROP_MARKS` |
@@ -146,10 +146,10 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 
 To eliminate empty `.stampalbum` files systematically, follow this execution order:
 
-1. **Phase A — Complete High-Impact Page Setup Fixtures:**
-   - [ ] `page-size-v1` (4 variations: A4 portrait, A4 landscape, US Letter, fractional)
-   - [ ] `margins-v1` (3 remaining variations: asymmetric, fractional, symmetric)
-   - [ ] `spacing-v1` (4 variations: horizontal, vertical, combined, zero)
+1. **Phase A — Complete High-Impact Page Setup Fixtures (100% COMPLETE):**
+   - [x] `page-size-v1` (4 variations: A4 portrait, A4 landscape, US Letter, fractional)
+   - [x] `margins-v1` (4 variations: asymmetric, fractional, symmetric, even-override)
+   - [x] `spacing-v1` (4 variations: horizontal, vertical, combined, zero)
 2. **Phase B — Complete Page Borders:**
    - [ ] `border-v1` (10 variations: single, double, triple, inner-only, etc.)
    - [ ] `border-colour-v1` (6 variations: hex, named colors, grey tints)
