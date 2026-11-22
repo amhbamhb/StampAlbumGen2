@@ -91,6 +91,7 @@ pub struct UpdateInfo {
     pub sha256_url: Option<String>,
     pub asset_name: Option<String>,
     pub asset_size: Option<u64>,
+    pub pdf_help_download_url: Option<String>,
     pub checked_at_timestamp: u64,
 }
 
@@ -216,6 +217,7 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
         let mut sha256_url = None;
         let mut asset_name = None;
         let mut asset_size = None;
+        let mut pdf_help_download_url = None;
 
         for asset in release.assets {
             if asset.name.eq_ignore_ascii_case(bin_name) {
@@ -224,6 +226,11 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
                 asset_size = Some(asset.size);
             } else if asset.name.eq_ignore_ascii_case(chk_name) {
                 sha256_url = Some(asset.browser_download_url.clone());
+            } else if asset
+                .name
+                .eq_ignore_ascii_case("StampAlbumGenerator2HelpManual.pdf")
+            {
+                pdf_help_download_url = Some(asset.browser_download_url.clone());
             }
         }
 
@@ -244,6 +251,7 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
             sha256_url,
             asset_name,
             asset_size,
+            pdf_help_download_url,
             checked_at_timestamp: now_ts,
         };
 
@@ -498,10 +506,42 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
 
     info!("Successfully replaced binary with v{}", target_version);
 
+    // If available as a release asset, download and update the Help Manual PDF adjacent to the executable
+    let pdf_filename = "StampAlbumGenerator2HelpManual.pdf";
+    if let Some(pdf_url) = &update_info.pdf_help_download_url {
+        info!("Downloading updated Help Manual PDF from {}", pdf_url);
+        if let Ok(resp) = client.get(pdf_url).send() {
+            if resp.status().is_success() {
+                if let Ok(bytes) = resp.bytes() {
+                    if let Some(exe_dir) = target_exe.as_ref().and_then(|p| p.parent()) {
+                        let pdf_path = exe_dir.join(pdf_filename);
+                        if let Err(e) = std::fs::write(&pdf_path, &bytes) {
+                            log::warn!(
+                                "Could not update Help Manual at {}: {}",
+                                pdf_path.display(),
+                                e
+                            );
+                        } else {
+                            info!("Successfully updated Help Manual at {}", pdf_path.display());
+                        }
+                    }
+                    if let Ok(cwd) = std::env::current_dir() {
+                        if target_exe.as_ref().and_then(|p| p.parent()) != Some(&cwd) {
+                            let cwd_pdf = cwd.join(pdf_filename);
+                            let _ = std::fs::write(&cwd_pdf, &bytes);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if trigger_restart {
         set_update_progress(UpdateProgressStatus {
             state: UpdateState::Restarting,
-            message: format!("Successfully updated to v{target_version}! Restarting..."),
+            message: format!(
+                "Successfully updated to v{target_version} and updated the Help Manual PDF! Restarting..."
+            ),
             percent: Some(100),
             downloaded_bytes,
             total_bytes,
@@ -513,7 +553,9 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
         let _ = restart_application_internal(target_exe.as_deref());
     }
 
-    Ok(format!("Successfully updated to v{target_version}"))
+    Ok(format!(
+        "Successfully updated to v{target_version} and refreshed StampAlbumGenerator2HelpManual.pdf."
+    ))
 }
 
 /// Downloads, checksum-verifies, and atomically self-replaces the running executable synchronously.
@@ -594,7 +636,14 @@ where
 /// Builds the batch script content used on Windows to safely detach and restart the application.
 pub fn build_windows_restart_script(exe_path: &Path, args: &[String]) -> String {
     let exe_str = strip_verbatim_path_prefix(&exe_path.to_string_lossy());
-    let mut exe_cmd = format!("start \"\" \"{}\"", exe_str);
+    let dir_str = exe_path
+        .parent()
+        .map(|p| strip_verbatim_path_prefix(&p.to_string_lossy()));
+    let mut exe_cmd = if let Some(ref dir) = dir_str {
+        format!("start \"\" /D \"{}\" \"{}\"", dir, exe_str)
+    } else {
+        format!("start \"\" \"{}\"", exe_str)
+    };
     for arg in args {
         let sanitized: String = arg
             .chars()
@@ -822,7 +871,7 @@ mod tests {
 
         assert!(script.starts_with("@echo off\r\nping 127.0.0.1 -n 3 >nul\r\n"));
         assert!(script.contains(
-            r#"start "" "C:\Program Files\StampAlbum\stamp_album_gen2.exe" --review-ui "Albums/My Album/My Album.db""#
+            r#"start "" /D "C:\Program Files\StampAlbum" "C:\Program Files\StampAlbum\stamp_album_gen2.exe" --review-ui "Albums/My Album/My Album.db""#
         ));
         assert!(script.ends_with("(goto) 2>nul & del \"%~f0\"\r\n"));
         // Ensure no escaped quotes like \"\" exist

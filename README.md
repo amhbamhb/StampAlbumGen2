@@ -13,8 +13,9 @@ This application generates AlbumEasy source pages (*.txt files) from stamp data 
 > [!TIP]
 > ### 🚀 New in v1.15.0+: One-Click In-App Auto-Updates!
 > Updating **Stamp Album Generator 2** is now effortless with built-in automatic updates:
-> - **In the Review Web UI:** Whenever a new release is published on GitHub, an update notification badge (`✨ Update to vX.Y.Z Available`) automatically appears in the top header. Click it to read the release notes and click **"Update & Restart Now"**. The application downloads the update, verifies its SHA256 checksum, self-replaces, and restarts automatically with your session intact!
-> - **From the Command Line:** Check for updates at any time with `stamp_album_gen2 --check-update`, or install the latest release automatically with `stamp_album_gen2 --update`.
+> - **In the Review Web UI:** Whenever a new release is published on GitHub, an update notification badge (`✨ Update to vX.Y.Z Available`) automatically appears in the top header. Click it to read the release notes and click **"Update & Restart Now"**. The application downloads the update, verifies its SHA256 checksum, self-replaces, refreshes your local Help Manual PDF (`StampAlbumGenerator2HelpManual.pdf`), and restarts automatically with your session intact!
+> - **From the Command Line:** Check for updates at any time with `stamp_album_gen2 --check-update`, or install the latest release automatically with `stamp_album_gen2 --update` (which also downloads and installs the updated Help Manual PDF).
+> - **Automatic Documentation Updates:** The local `StampAlbumGenerator2HelpManual.pdf` file in your application folder is kept synchronized on every upgrade so you always have the latest documentation, visual guides, and config options at your fingertips.
 > - **Configurable:** Automatic background checks on startup are enabled by default and can be configured in `config.toml` under `[updates]`.
 
 The latest release is available on GitHub with attestations: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
@@ -83,7 +84,7 @@ The Application, on every PDF generation, will always create a backup of the txt
 
 There are also command-line usage instructions available within the PDF.  Some instructions below are provided as examples.
 
-All files that are needed for the application are created automatically upon the first launch.  Include the config.toml file, which contains the necessary configuration settings for the application.  A help file is also generated to assist users in understanding and using the application effectively.  If the file have been updated, like the help file, a new version will be created automatically.  This also applies to the config.toml.  The web UI will notify the user that there are new config items now active.
+All files that are needed for the application are created automatically upon the first launch.  Include the config.toml file, which contains the necessary configuration settings for the application.  A help file is also generated to assist users in understanding and using the application effectively.  When upgrading to a new release, the help file (`StampAlbumGenerator2HelpManual.pdf`) is automatically updated in your application folder alongside the executable, and the Review UI update modal will confirm that the Help Manual PDF was updated.  This also applies to config.toml: the web UI will notify the user whenever new config items are active.
 
 ## Advanced Usage
 

@@ -282,6 +282,9 @@ jobs:
             test -s "$f"
             sha256sum "$f" > "$f.sha256"
           done
+          if [ -f StampAlbumGenerator2HelpManual.pdf ]; then
+            sha256sum StampAlbumGenerator2HelpManual.pdf > StampAlbumGenerator2HelpManual.pdf.sha256
+          fi
       - name: Package all binaries into a single archive
         run: |
           TAG="${{ needs.prepare-release.outputs.release_tag }}"
@@ -310,7 +313,12 @@ jobs:
             404) gh release create "$TAG" --verify-tag --draft --title "$TAG" --generate-notes ;;
             *) echo "Release lookup failed (HTTP $status)." >&2; exit 1 ;;
           esac
+          PDF_ASSETS=()
+          if [ -f StampAlbumGenerator2HelpManual.pdf ]; then
+            PDF_ASSETS+=(StampAlbumGenerator2HelpManual.pdf StampAlbumGenerator2HelpManual.pdf.sha256)
+          fi
           gh release upload "$TAG" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 \
-            stamp_album_gen2 stamp_album_gen2.sha256 "stamp_album_gen2-${TAG}.tar.gz" --clobber
+            stamp_album_gen2 stamp_album_gen2.sha256 "stamp_album_gen2-${TAG}.tar.gz" \
+            "${PDF_ASSETS[@]}" --clobber
           gh release edit "$TAG" --draft=false
           echo "Published $TAG" >> "$GITHUB_STEP_SUMMARY"

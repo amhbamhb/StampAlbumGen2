@@ -119,6 +119,10 @@ pub(super) fn render_update_dialog_html() -> &'static str {
             <div style='font-size:12px;font-weight:600;color:#475467;margin-bottom:6px;'>Release Notes:</div>
             <div id='updateReleaseNotes' style='font-size:12px;color:#334155;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;'>Loading release notes...</div>
         </div>
+        <div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:9px 12px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px;'>
+            <span style='font-size:16px;'>📘</span>
+            <span>The latest Help Manual PDF (<code>StampAlbumGenerator2HelpManual.pdf</code>) will also be updated automatically.</span>
+        </div>
         <div id='updateStatusBox' style='display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;color:#166534;font-size:13px;'>
             <div id='updateStatusMsg' style='display:flex;align-items:center;gap:8px;'>
                 <span>⏳</span> <span>Starting update...</span>
@@ -255,7 +259,7 @@ function pollUpdateProgress() {
                 } else if (p.state === 'restarting') {
                     clearInterval(pollInterval);
                     if (progressBar) progressBar.style.display = 'none';
-                    if (statusMsg) statusMsg.innerHTML = '<span>✅</span> <span>' + (p.message || 'Update installed! Restarting application...') + '</span>';
+                    if (statusMsg) statusMsg.innerHTML = '<span>✅</span> <span>' + (p.message || 'Update installed and Help Manual PDF refreshed! Restarting application...') + '</span>';
                     pollAndReloadAfterRestart();
                 } else if (p.state === 'failed') {
                     clearInterval(pollInterval);
