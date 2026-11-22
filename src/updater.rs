@@ -636,10 +636,11 @@ where
 /// Builds the batch script content used on Windows to safely detach and restart the application.
 pub fn build_windows_restart_script(exe_path: &Path, args: &[String]) -> String {
     let exe_str = strip_verbatim_path_prefix(&exe_path.to_string_lossy());
-    let dir_str = exe_path
-        .parent()
-        .map(|p| strip_verbatim_path_prefix(&p.to_string_lossy()));
-    let mut exe_cmd = if let Some(ref dir) = dir_str {
+    let dir_str = match exe_str.rfind(['/', '\\']) {
+        Some(idx) if idx > 0 => Some(&exe_str[..idx]),
+        _ => None,
+    };
+    let mut exe_cmd = if let Some(dir) = dir_str {
         format!("start \"\" /D \"{}\" \"{}\"", dir, exe_str)
     } else {
         format!("start \"\" \"{}\"", exe_str)
