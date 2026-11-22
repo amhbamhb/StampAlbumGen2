@@ -1,0 +1,24 @@
+# StampAlbumGen2 native album document, version 1.
+# Spacing test fixture with 4 countries and extra-long footprint spacing.
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (6.25 0.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_PAGE_TITLE (TB 16 "WORLDWIDE STAMP COLLECTION" 12)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.25 black 4)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+# Row 1: San Marino and New Zealand
+STAMP_IMAGE ("images/san-marino.jpg" 40.0 30.0 0.2 "HN" 8 "San Marino 2024 Official Commemorative Issue")
+STAMP_IMAGE ("images/new-zealand.jpg" 42.0 25.0 0.189189 "HN" 8 "New Zealand Royal Philatelic Health Foundation")
+
+NATIVE_ROW_BREAK ()
+
+# Row 2: Malta and Sweden
+STAMP_IMAGE ("images/malta.jpg" 25.0 39.5 0.179856 "HN" 8 "Malta Queen Elizabeth II Historical Definitive")
+STAMP_IMAGE ("images/sweden.jpg" 26.0 31.0 0.185714 "HN" 8 "Sweden Royal Postal Heritage Commemorative")

@@ -1,0 +1,58 @@
+STAMPALBUM 1
+# All-in-one Spacing Comparison with Clean Short Captions (Native Mode)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (6.25 8.75)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_PAGE_TITLE (TB 15 "PAGE SPACING COMPARISON - NATIVE VECTOR ENGINE" 8)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.25 black 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+# ==============================================================================
+# PAGE 1: Combined Spacing (6.25mm Horizontal, 8.75mm Vertical)
+# ==============================================================================
+# Row 1
+STAMP_IMAGE ("images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
+STAMP_IMAGE ("images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
+STAMP_IMAGE ("images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")
+
+# ==============================================================================
+# PAGE 2: Horizontal Spacing Only (6.25mm Horizontal, 0.0mm Vertical)
+# ==============================================================================
+NATIVE_PAGE_BREAK (6.25 0.0)
+# Row 1
+STAMP_IMAGE ("images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
+STAMP_IMAGE ("images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
+STAMP_IMAGE ("images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")
+
+# ==============================================================================
+# PAGE 3: Vertical Spacing Only (0.0mm Horizontal, 8.75mm Vertical)
+# ==============================================================================
+NATIVE_PAGE_BREAK (0.0 8.75)
+# Row 1
+STAMP_IMAGE ("images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
+STAMP_IMAGE ("images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
+STAMP_IMAGE ("images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")
+
+# ==============================================================================
+# PAGE 4: Zero Spacing Baseline (0.0mm Horizontal, 0.0mm Vertical)
+# ==============================================================================
+NATIVE_PAGE_BREAK (0.0 0.0)
+# Row 1
+STAMP_IMAGE ("images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
+STAMP_IMAGE ("images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
+STAMP_IMAGE ("images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")

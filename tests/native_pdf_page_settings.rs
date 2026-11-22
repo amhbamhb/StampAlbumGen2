@@ -384,3 +384,144 @@ fn rendered_paths_match_margin_and_spacing_fixtures() -> Result<()> {
     }
     Ok(())
 }
+
+#[test]
+fn spacing_stampalbum_and_raw_files_render_and_match_spacing() -> Result<()> {
+    use stamp_album_gen2::native_pdf::{album::NativeAlbum, albumeasy};
+
+    let root = fixture("spacing-v1");
+    let temporary = tempfile::tempdir()?;
+    let cases = [
+        ("combined", 6.25, 8.75),
+        ("horizontal", 6.25, 0.0),
+        ("vertical", 0.0, 8.75),
+        ("zero", 0.0, 0.0),
+    ];
+
+    for (stem, h_mm, v_mm) in cases {
+        let raw_path = root.join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = temporary.path().join(format!("{stem}-raw.pdf"));
+        let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, 1);
+        let doc_raw = PdfDocument::open(&raw_pdf)?;
+        assert_eq!(doc_raw.page_count()?, 1);
+
+        let native_path = root.join(format!("{stem}.stampalbum"));
+        let native_pdf = temporary.path().join(format!("{stem}-native.pdf"));
+        let album = NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(native_pages.len(), 1);
+        let page = &native_pages[0];
+        assert_eq!(page.items.len(), 4);
+        for item in &page.items {
+            let frame_bottom = item.geometry.as_ref().unwrap().frame_bounds().bottom;
+            let caption_top = item.caption.as_ref().unwrap().bounds.top;
+            let clearance = frame_bottom - caption_top;
+            assert!(
+                clearance >= 2.0,
+                "text bleeds into frame: clearance = {clearance}"
+            );
+        }
+        let row1_h_gap = page.items[1].footprint.left - page.items[0].footprint.right;
+        near(row1_h_gap, h_mm);
+        let row2_h_gap = page.items[3].footprint.left - page.items[2].footprint.right;
+        near(row2_h_gap, h_mm);
+        let row1_bottom = page.items[0]
+            .footprint
+            .bottom
+            .min(page.items[1].footprint.bottom);
+        let row2_top = page.items[2].footprint.top.max(page.items[3].footprint.top);
+        let v_gap = row1_bottom - row2_top;
+        near(v_gap, v_mm);
+        let doc_native = PdfDocument::open(&native_pdf)?;
+        assert_eq!(doc_native.page_count()?, 1);
+    }
+    Ok(())
+}
+
+#[test]
+fn spacing_all_in_one_comparison_renders_four_clean_pages_without_bottom_overflow() -> Result<()> {
+    use stamp_album_gen2::native_pdf::{album::NativeAlbum, albumeasy};
+
+    let root = fixture("spacing-v1");
+    let temporary = tempfile::tempdir()?;
+
+    // 1. Raw-native rendering
+    let raw_path = root.join("all-in-one-compare-raw.stampalbum");
+    let raw_pdf = temporary.path().join("all-in-one-compare-raw.pdf");
+    let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+    assert_eq!(raw_pages, 4, "Raw-native must produce exactly 4 pages");
+    let doc_raw = PdfDocument::open(&raw_pdf)?;
+    assert_eq!(doc_raw.page_count()?, 4);
+
+    // 2. Native vector rendering
+    let native_path = root.join("all-in-one-compare.stampalbum");
+    let native_pdf = temporary.path().join("all-in-one-compare-native.pdf");
+    let album = NativeAlbum::load(&native_path)?;
+    let native_pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(native_pages.len(), 4, "Native must produce exactly 4 pages");
+    let doc_native = PdfDocument::open(&native_pdf)?;
+    assert_eq!(doc_native.page_count()?, 4);
+
+    // 3. Verify spacing and bottom clearance for each page in native mode
+    let expected_gaps = [
+        (6.25, 8.75), // Page 1: Combined
+        (6.25, 0.0),  // Page 2: Horizontal Only
+        (0.0, 8.75),  // Page 3: Vertical Only
+        (0.0, 0.0),   // Page 4: Zero Baseline
+    ];
+
+    for (page_idx, (expected_h, expected_v)) in expected_gaps.into_iter().enumerate() {
+        let page = &native_pages[page_idx];
+        assert_eq!(
+            page.items.len(),
+            4,
+            "Page {} must have 4 stamps",
+            page_idx + 1
+        );
+
+        for item in &page.items {
+            let frame_bottom = item.geometry.as_ref().unwrap().frame_bounds().bottom;
+            let caption_top = item.caption.as_ref().unwrap().bounds.top;
+            let clearance = frame_bottom - caption_top;
+            assert!(
+                clearance >= 2.0,
+                "Page {} item caption bleeds into frame: clearance = {clearance}",
+                page_idx + 1
+            );
+
+            // Verify bottom clearance: stamp and text must NEVER cross bottom border
+            let item_bottom = item.footprint.bottom;
+            let border_bottom = page.layout.content_bounds.bottom;
+            assert!(
+                item_bottom > border_bottom + 20.0,
+                "Page {} item bottom ({item_bottom}) too close to border ({border_bottom})",
+                page_idx + 1
+            );
+        }
+
+        // Horizontal gap between column 1 and column 2
+        let row1_h_gap = page.items[1].footprint.left - page.items[0].footprint.right;
+        near(row1_h_gap, expected_h);
+        let row2_h_gap = page.items[3].footprint.left - page.items[2].footprint.right;
+        near(row2_h_gap, expected_h);
+
+        // Vertical gap between row 1 and row 2
+        let row1_bottom = page.items[0]
+            .footprint
+            .bottom
+            .min(page.items[1].footprint.bottom);
+        let row2_top = page.items[2].footprint.top.max(page.items[3].footprint.top);
+        let v_gap = row1_bottom - row2_top;
+        near(v_gap, expected_v);
+    }
+
+    // 4. Verify reference PDF page count
+    let ref_path = root.join("all-in-one-compare.reference.pdf");
+    if ref_path.exists() {
+        let doc_ref = PdfDocument::open(&ref_path)?;
+        assert_eq!(doc_ref.page_count()?, 4, "Reference PDF must have 4 pages");
+    }
+
+    Ok(())
+}

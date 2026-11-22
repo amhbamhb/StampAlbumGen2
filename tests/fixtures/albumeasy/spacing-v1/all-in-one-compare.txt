@@ -1,0 +1,91 @@
+# All-in-one Spacing Comparison with Clean Short Captions
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (6.25 8.75)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+ALBUM_PAGES_TITLE (TB 15 "PAGE SPACING COMPARISON - ALBUMEASY BENCHMARK" 3)
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+# ==============================================================================
+# PAGE 1: Combined Spacing (Horizontal = 6.25 mm, Vertical = 8.75 mm)
+# ==============================================================================
+PAGE_START
+
+PAGE_TEXT_CENTRE (HN 9 "Note: Standard AlbumEasy does not expand footprints or wrap long text under images.")
+PAGE_TEXT_CENTRE (HN 8 "Short captions fit cleanly within stamp width without overlapping adjacent boxes.")
+PAGE_VSPACE (6.0)
+
+# Section 1: Combined Spacing (6.25mm Horizontal, 8.75mm Vertical)
+PAGE_TEXT (HB 10 "1. Combined Spacing: Horizontal = 6.25 mm, Vertical = 8.75 mm")
+PAGE_VSPACE (2.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 6.25)
+STAMP_ADD_IMG (35.0 26.0 "images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (8.75)
+ROW_START_FS (HN 8 0.25 6.25)
+STAMP_ADD_IMG (22.0 34.0 "images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 2: Horizontal Spacing Only (Horizontal = 6.25 mm, Vertical = 0.0 mm)
+# ==============================================================================
+PAGE_START
+
+PAGE_TEXT_CENTRE (HN 9 "Page 2: Horizontal Spacing Only (Vertical Gap = 0.0 mm)")
+PAGE_TEXT_CENTRE (HN 8 "Stamps are separated horizontally by 6.25 mm; rows sit flush with 0.0 mm vertical gap.")
+PAGE_VSPACE (6.0)
+
+# Section 2: Horizontal Spacing Only (6.25mm Horizontal, 0.0mm Vertical)
+PAGE_TEXT (HB 10 "2. Horizontal Spacing Only: Horizontal = 6.25 mm, Vertical = 0.0 mm")
+PAGE_VSPACE (2.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 6.25)
+STAMP_ADD_IMG (35.0 26.0 "images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (0.0)
+ROW_START_FS (HN 8 0.25 6.25)
+STAMP_ADD_IMG (22.0 34.0 "images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 3: Vertical Spacing Only (Horizontal = 0.0 mm, Vertical = 8.75 mm)
+# ==============================================================================
+PAGE_START
+
+PAGE_TEXT_CENTRE (HN 9 "Page 3: Vertical Spacing Only (Horizontal Gap = 0.0 mm)")
+PAGE_TEXT_CENTRE (HN 8 "Rows are separated vertically by 8.75 mm; stamps sit flush side-by-side with 0.0 mm horizontal gap.")
+PAGE_VSPACE (6.0)
+
+# Section 3: Vertical Spacing Only (0.0mm Horizontal, 8.75mm Vertical)
+PAGE_TEXT (HB 10 "3. Vertical Spacing Only: Horizontal = 0.0 mm, Vertical = 8.75 mm")
+PAGE_VSPACE (2.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 0.0)
+STAMP_ADD_IMG (35.0 26.0 "images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (8.75)
+ROW_START_FS (HN 8 0.25 0.0)
+STAMP_ADD_IMG (22.0 34.0 "images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 4: Zero Spacing Baseline (Horizontal = 0.0 mm, Vertical = 0.0 mm)
+# ==============================================================================
+PAGE_START
+
+PAGE_TEXT_CENTRE (HN 9 "Page 4: Zero Spacing Baseline (Zero Gaps)")
+PAGE_TEXT_CENTRE (HN 8 "Baseline with 0.0 mm horizontal and 0.0 mm vertical separation (stamps and rows touch).")
+PAGE_VSPACE (6.0)
+
+# Section 4: Zero Spacing Baseline (0.0mm Horizontal, 0.0mm Vertical)
+PAGE_TEXT (HB 10 "4. Zero Spacing Baseline: Horizontal = 0.0 mm, Vertical = 0.0 mm")
+PAGE_VSPACE (2.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 0.0)
+STAMP_ADD_IMG (35.0 26.0 "images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (0.0)
+ROW_START_FS (HN 8 0.25 0.0)
+STAMP_ADD_IMG (22.0 34.0 "images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "images/sweden.jpg" "" "" "Sweden")
