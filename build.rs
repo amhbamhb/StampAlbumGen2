@@ -28,9 +28,19 @@ fn main() {
         res.set("FileVersion", &version);
         res.set("ProductVersion", &version);
 
-        // Ensure compilation errors are visible during build
+        // Attempt to embed icon and version metadata when rc.exe or windres is available.
+        // If the Windows SDK resource compiler is not installed, continue cleanly with a descriptive note.
         if let Err(e) = res.compile() {
-            println!("cargo:warning=winres compile failed: {}", e);
+            if e.kind() == std::io::ErrorKind::NotFound
+                || e.raw_os_error() == Some(2)
+                || e.raw_os_error() == Some(3)
+            {
+                println!(
+                    "cargo:warning=Windows resource compiler (rc.exe) not found; skipping .ico/version embedding. (To embed resources locally, install the Windows 10/11 SDK via Visual Studio Installer)"
+                );
+            } else {
+                println!("cargo:warning=winres compile failed: {}", e);
+            }
         }
     }
 }
