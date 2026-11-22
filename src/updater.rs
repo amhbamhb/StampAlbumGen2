@@ -501,8 +501,30 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
 
     let target_exe = std::env::current_exe().ok();
 
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = temp_file.as_file().metadata() {
+            let mut perms = metadata.permissions();
+            perms.set_mode(0o755);
+            let _ = temp_file.as_file().set_permissions(perms);
+        }
+    }
+
     self_replace::self_replace(temp_file.path())
         .map_err(|e| format!("Failed to replace executable: {e}"))?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Some(target) = target_exe.as_ref() {
+            if let Ok(metadata) = std::fs::metadata(target) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o755);
+                let _ = std::fs::set_permissions(target, perms);
+            }
+        }
+    }
 
     info!("Successfully replaced binary with v{}", target_version);
 
@@ -510,28 +532,27 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
     let pdf_filename = "StampAlbumGenerator2HelpManual.pdf";
     if let Some(pdf_url) = &update_info.pdf_help_download_url {
         info!("Downloading updated Help Manual PDF from {}", pdf_url);
-        if let Ok(resp) = client.get(pdf_url).send() {
-            if resp.status().is_success() {
-                if let Ok(bytes) = resp.bytes() {
-                    if let Some(exe_dir) = target_exe.as_ref().and_then(|p| p.parent()) {
-                        let pdf_path = exe_dir.join(pdf_filename);
-                        if let Err(e) = std::fs::write(&pdf_path, &bytes) {
-                            log::warn!(
-                                "Could not update Help Manual at {}: {}",
-                                pdf_path.display(),
-                                e
-                            );
-                        } else {
-                            info!("Successfully updated Help Manual at {}", pdf_path.display());
-                        }
-                    }
-                    if let Ok(cwd) = std::env::current_dir() {
-                        if target_exe.as_ref().and_then(|p| p.parent()) != Some(&cwd) {
-                            let cwd_pdf = cwd.join(pdf_filename);
-                            let _ = std::fs::write(&cwd_pdf, &bytes);
-                        }
-                    }
+        if let Ok(resp) = client.get(pdf_url).send()
+            && resp.status().is_success()
+            && let Ok(bytes) = resp.bytes()
+        {
+            if let Some(exe_dir) = target_exe.as_ref().and_then(|p| p.parent()) {
+                let pdf_path = exe_dir.join(pdf_filename);
+                if let Err(e) = std::fs::write(&pdf_path, &bytes) {
+                    log::warn!(
+                        "Could not update Help Manual at {}: {}",
+                        pdf_path.display(),
+                        e
+                    );
+                } else {
+                    info!("Successfully updated Help Manual at {}", pdf_path.display());
                 }
+            }
+            if let Ok(cwd) = std::env::current_dir()
+                && target_exe.as_ref().and_then(|p| p.parent()) != Some(&cwd)
+            {
+                let cwd_pdf = cwd.join(pdf_filename);
+                let _ = std::fs::write(&cwd_pdf, &bytes);
             }
         }
     }
@@ -662,6 +683,18 @@ pub fn build_windows_restart_script(exe_path: &Path, args: &[String]) -> String 
     )
 }
 
+/// Builds the shell script and arguments used on Unix/Linux to safely detach and restart the application.
+pub fn build_unix_restart_script(exe_path: &Path, args: &[String]) -> (String, Vec<String>) {
+    let exe_str = exe_path.to_string_lossy().to_string();
+    let mut sh_script = "chmod +x \"$0\" 2>/dev/null; sleep 2; exec \"$0\"".to_string();
+    let mut sh_args = vec![exe_str];
+    for (i, arg) in args.iter().enumerate() {
+        sh_script.push_str(&format!(" \"${}\"", i + 1));
+        sh_args.push(arg.clone());
+    }
+    (sh_script, sh_args)
+}
+
 /// Spawns the updated executable and exits the current process cleanly with socket detachment.
 pub fn restart_application() -> Result<(), String> {
     restart_application_internal(None)
@@ -736,18 +769,33 @@ pub(crate) fn restart_application_internal(target_exe: Option<&Path>) -> Result<
 
     #[cfg(not(target_os = "windows"))]
     {
-        let exe_str = current_exe.to_string_lossy().to_string();
-        let mut sh_script = "sleep 2; exec \"$0\"".to_string();
-        let mut sh_args = vec![exe_str];
-        for (i, arg) in args.into_iter().enumerate() {
-            sh_script.push_str(&format!(" \"${}\"", i + 1));
-            sh_args.push(arg);
+        use std::process::Stdio;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(metadata) = std::fs::metadata(&current_exe) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o755);
+                let _ = std::fs::set_permissions(&current_exe, perms);
+            }
         }
-        let _ = std::process::Command::new("sh")
-            .arg("-c")
+
+        let (sh_script, sh_args) = build_unix_restart_script(&current_exe, &args);
+        let mut cmd = std::process::Command::new("sh");
+        cmd.arg("-c")
             .arg(&sh_script)
             .args(&sh_args)
-            .spawn();
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.process_group(0);
+        }
+
+        let _ = cmd.spawn();
     }
 
     // Clean exit of the existing process so ports and files are freed before child launches
@@ -877,6 +925,29 @@ mod tests {
         assert!(script.ends_with("(goto) 2>nul & del \"%~f0\"\r\n"));
         // Ensure no escaped quotes like \"\" exist
         assert!(!script.contains(r#"\""#));
+    }
+
+    #[test]
+    fn test_build_unix_restart_script() {
+        let exe = Path::new("/usr/local/bin/stamp_album_gen2");
+        let args = vec![
+            "--review-ui".to_string(),
+            "Albums/My Album/My Album.db".to_string(),
+        ];
+        let (script, sh_args) = build_unix_restart_script(exe, &args);
+
+        assert_eq!(
+            script,
+            "chmod +x \"$0\" 2>/dev/null; sleep 2; exec \"$0\" \"$1\" \"$2\""
+        );
+        assert_eq!(
+            sh_args,
+            vec![
+                "/usr/local/bin/stamp_album_gen2".to_string(),
+                "--review-ui".to_string(),
+                "Albums/My Album/My Album.db".to_string(),
+            ]
+        );
     }
 
     #[test]
