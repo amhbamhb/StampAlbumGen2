@@ -146,3 +146,10 @@ fn both_screens_embed_help_manual_button() {
         assert!(html.contains("Help Manual"));
     }
 }
+
+#[test]
+fn both_screens_embed_app_icon() {
+    for html in [render_bootstrap_html(None), render_html(&minimal_payload())] {
+        assert!(html.contains("/app-icon.ico"));
+    }
+}

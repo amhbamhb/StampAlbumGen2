@@ -32,6 +32,10 @@ pub(super) fn render_compare_top_html(
             <a href='/help-manual.pdf' target='_blank' rel='noopener noreferrer' id='btnHelpManualGuide' class='neutral guideHelpManualButton' title='Open Help Manual (PDF)' style='display:inline-flex;align-items:center;gap:4px;text-decoration:none;padding:7px 11px;border-radius:8px;border:1px solid #0369a1;background:#0284c7;color:#fff;font-weight:600;cursor:pointer;'>❓ Help Manual</a>
             <button class='neutral reviewNavigationExitButton' onclick='closeReviewUi()'>Close Review UI and exit the program</button>
         </div>
+        <div style='margin-top:14px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;'>
+            <img src='/app-icon.ico' alt='SAG2' style='width:24px;height:24px;vertical-align:middle;object-fit:contain;' />
+            <span style='font-size:12px;color:#64748b;font-weight:600;'>Stamp Album Generator 2</span>
+        </div>
   </div>
     {runtime_log_compare_panel_html}"#,
         reconnect_banner_compare_html = reconnect_banner_compare_html,

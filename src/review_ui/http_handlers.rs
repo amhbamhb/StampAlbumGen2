@@ -8,6 +8,10 @@ fn bundled_favicon_png() -> &'static [u8] {
     include_bytes!("../../assets/icons/generated/MainIcon.ico")
 }
 
+fn bundled_app_icon() -> &'static [u8] {
+    include_bytes!("../../assets/new/app.ico")
+}
+
 /// Returns the JSON body for `GET /api/ping`.
 /// Used by `probe_for_our_instance()` on startup to detect a running copy.
 fn ping_response_json() -> String {
@@ -511,6 +515,25 @@ fn handle_help_manual_request(request: tiny_http::Request) -> Option<tiny_http::
     Some(request)
 }
 
+fn handle_app_icon_request(request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let path = request.url().split('?').next().unwrap_or("");
+    if method == Method::Get
+        && (path == "/app-icon.ico" || path == "/app-icon.png" || path == "/assets/app.ico")
+    {
+        let mut resp = Response::from_data(bundled_app_icon().to_vec());
+        if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"image/x-icon"[..]) {
+            resp = resp.with_header(h);
+        }
+        if let Ok(h) = Header::from_bytes(&b"Cache-Control"[..], &b"public, max-age=86400"[..]) {
+            resp = resp.with_header(h);
+        }
+        let _ = request.respond(resp);
+        return None;
+    }
+    Some(request)
+}
+
 fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
     let path = request.url().split('?').next().unwrap_or("");
     if path != "/api/stampworld-country-url"
@@ -589,6 +612,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         };
         let Some(request) = handle_help_manual_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_app_icon_request(request) else {
             continue;
         };
         let Some(request) = external_album_api::handle(request) else {
@@ -1641,6 +1667,9 @@ pub(super) fn serve_review_requests(
             continue;
         };
         let Some(request) = handle_help_manual_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_app_icon_request(request) else {
             continue;
         };
         let Some(mut request) = handle_country_url_request(request) else {
