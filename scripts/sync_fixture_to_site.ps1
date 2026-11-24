@@ -12,7 +12,7 @@
 
 .PARAMETER SiteRepoPath
     Path to the stampalbumgenerator2-site repository.
-    Defaults to "C:\Users\ray1\repo\stampalbumgenerator2-site".
+    Auto-detects ../StampAlbumGen2-website, ../stampalbumgenerator2-site, or Windows defaults.
 
 .EXAMPLE
     .\scripts\sync_fixture_to_site.ps1 -FixtureId margins-v1
@@ -24,23 +24,44 @@ param(
     [string]$FixtureId = "all",
 
     [Parameter(Position = 1)]
-    [string]$SiteRepoPath = "C:\Users\ray1\repo\stampalbumgenerator2-site"
+    [string]$SiteRepoPath = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$FixturesSourceRoot = Join-Path $RepoRoot "tests\fixtures\albumeasy"
+$FixturesSourceRoot = Join-Path $RepoRoot "tests/fixtures/albumeasy"
+if (-not (Test-Path $FixturesSourceRoot)) {
+    $FixturesSourceRoot = Join-Path $RepoRoot "tests\fixtures\albumeasy"
+}
 
 if (-not (Test-Path $FixturesSourceRoot)) {
     throw "Cannot find fixtures directory at $FixturesSourceRoot"
+}
+
+# Auto-detect website repo path if not explicitly provided or not found
+if ([string]::IsNullOrWhiteSpace($SiteRepoPath) -or -not (Test-Path $SiteRepoPath)) {
+    $candidatePaths = @(
+        (Join-Path $RepoRoot "..\StampAlbumGen2-website"),
+        (Join-Path $RepoRoot "..\stampalbumgenerator2-site"),
+        (Join-Path $RepoRoot "../StampAlbumGen2-website"),
+        (Join-Path $RepoRoot "../stampalbumgenerator2-site"),
+        "C:\Users\ray1\repo\stampalbumgenerator2-site",
+        "C:\Users\ray1\repo\StampAlbumGen2-website"
+    )
+    foreach ($cand in $candidatePaths) {
+        if (Test-Path $cand) {
+            $SiteRepoPath = (Resolve-Path $cand).Path
+            break
+        }
+    }
 }
 
 if (-not (Test-Path $SiteRepoPath)) {
     throw "Cannot find website repository at $SiteRepoPath"
 }
 
-$SiteFixturesDir = Join-Path $SiteRepoPath "static\pages\fixtures"
+$SiteFixturesDir = Join-Path $SiteRepoPath "static/pages/fixtures"
 $SitePdfsDir = Join-Path $SiteFixturesDir "pdfs"
 $SiteSourceDir = Join-Path $SiteFixturesDir "source"
 $SiteThumbsDir = Join-Path $SiteFixturesDir "thumbs"
@@ -109,6 +130,20 @@ foreach ($fix in $targetFixtures) {
         }
     }
 
+    # Generate missing thumbnails for this fixture using pdftoppm if available
+    $pdftoppmCmd = Get-Command pdftoppm -ErrorAction SilentlyContinue
+    if ($pdftoppmCmd) {
+        $syncedPdfs = Get-ChildItem -Path $SitePdfsDir -Filter "$fix--*.pdf" -File
+        foreach ($p in $syncedPdfs) {
+            $baseStem = [System.IO.Path]::GetFileNameWithoutExtension($p.Name)
+            $thumbDest = Join-Path $SiteThumbsDir "$baseStem.png"
+            if (-not (Test-Path $thumbDest)) {
+                $thumbPrefix = Join-Path $SiteThumbsDir $baseStem
+                & pdftoppm -png -scale-to-x 400 -scale-to-y -1 -f 1 -singlefile $p.FullName $thumbPrefix 2>$null
+            }
+        }
+    }
+
     # 3. Update manifest entry for this fixture
     $fixPdfs = Get-ChildItem -Path $SitePdfsDir -Filter "$fix--*.pdf" -File | Sort-Object Name
     $fixSources = Get-ChildItem -Path $SiteSourceDir -Filter "$fix--*" -File | Sort-Object Name
@@ -154,25 +189,31 @@ foreach ($fix in $targetFixtures) {
         $manifest | Add-Member -MemberType NoteProperty -Name $fix -Value $entry
     }
 
-    Write-Host "  -> Synced $fix ($($pdfList.Count) PDFs, $($srcList.Count) sources)" -ForegroundColor Green
+    Write-Host "  -> Synced $fix ($($pdfList.Count) PDFs, $($srcList.Count) sources, $($thumbList.Count) thumbs)" -ForegroundColor Green
 }
 
 # Save updated manifest
 $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path $ManifestPath -Encoding UTF8
 Write-Host "Updated manifest: $ManifestPath" -ForegroundColor Cyan
 
-# 4. Generate thumbnails for any new PDFs
-$thumbScript = Join-Path $SiteRepoPath "generate_all_thumbs.ps1"
-if (Test-Path $thumbScript) {
-    Write-Host "`nRunning thumbnail generator ($thumbScript)..." -ForegroundColor Yellow
-    & powershell -ExecutionPolicy Bypass -File $thumbScript
+# Determine PowerShell command name
+$psCmd = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell" }
+
+# 4. Generate thumbnails on Windows via WinRT if pdftoppm was not used
+if (-not (Get-Command pdftoppm -ErrorAction SilentlyContinue)) {
+    $thumbScript = Join-Path $SiteRepoPath "generate_all_thumbs.ps1"
+    if (Test-Path $thumbScript) {
+        Write-Host "`nRunning thumbnail generator ($thumbScript)..." -ForegroundColor Yellow
+        & $psCmd -ExecutionPolicy Bypass -File $thumbScript
+    }
 }
 
 # 5. Regenerate examples.html gallery page
 $pageScript = Join-Path $SiteRepoPath "generate_examples_page.ps1"
 if (Test-Path $pageScript) {
     Write-Host "`nRegenerating examples.html ($pageScript)..." -ForegroundColor Yellow
-    & powershell -ExecutionPolicy Bypass -File $pageScript
+    $siteStatic = Join-Path $SiteRepoPath "static"
+    & $psCmd -ExecutionPolicy Bypass -File $pageScript -SiteRoot $siteStatic
 }
 
 Write-Host "`n[SUCCESS] Sync completed: $pdfCopyCount PDFs and $srcCopyCount sources synced to website!" -ForegroundColor Green

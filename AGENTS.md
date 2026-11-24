@@ -137,7 +137,7 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
 
 ### 4. Git / Version Control
 
-- This repository uses **GitHub**: `amhbamhb/StampAlbumGen2`.
+- This repository uses **GitHub**: `amhbamhb/StampAlbumGen2` (and website repo `StampAlbumGen2-website` / `stampalbumgenerator2-site`).
 - **Per-Item GitHub Issue & Branch Workflow (MANDATORY)**:
   - For each new item, fixture family, command implementation, or bug fix:
     1. Create a dedicated GitHub issue first using `gh issue create --repo amhbamhb/StampAlbumGen2 --title "<title>" --body "<details>"`.
@@ -147,7 +147,16 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
        - **Mandatory All-In-One Comprehensive Showcase**: The `all-in-one-compare` (or `all-in-one`) file for every fixture family must contain **ALL** the variations/test outputs of that fixture family (one page per variation, or a comprehensive sequence covering all variations), not just a subset or sample of 2. This applies to all past and future work for the new native-pdf conversions. If past fixture families were not done this way, they need to be updated for the final version in `.stampalbum` format only.
        - **Dual Documentation (User-Friendly & Detailed)**: Always author documentation in both easy, user-focused language for stamp collectors and comprehensive technical details (parameters, coordinates, command grammar, and reference provenance).
        - **User Manual Updates (`docs/manual/src/`)**: Whenever adding or modifying a feature, command, or fixture family, always update the Typst user manual source in `docs/manual/src/sections/` in easy, user-friendly language for stamp collectors. Recompile the manual using `powershell -ExecutionPolicy Bypass -File docs/manual/build_manual.ps1` (or `./docs/manual/build_manual.sh`) so both `docs/manual/StampAlbumGenerator2HelpManual.pdf` and the root embedded `StampAlbumGenerator2HelpManual.pdf` are updated.
-       - **Keep PDFs and Gallery Updated**: Whenever changes occur, regenerate the native PDFs and synchronize all source files, rendered PDFs, and gallery entries to the website repository (`stampalbumgenerator2-site`).
+       - **Keep PDFs and Website Gallery Updated (MANDATORY)**: Whenever changes occur, new features are implemented, or fixtures are added/updated:
+         1. Regenerate all native PDFs (`*-native.pdf` and `*-raw-native.pdf`).
+         2. Synchronize all source files, rendered PDFs, thumbnails, manifest, and gallery pages to the website repository (`../StampAlbumGen2-website` or `../stampalbumgenerator2-site`) by running:
+            ```bash
+            pwsh scripts/sync_fixture_to_site.ps1 -FixtureId <fixture-id>
+            # Or to sync all fixtures:
+            pwsh scripts/sync_fixture_to_site.ps1 -FixtureId all
+            ```
+            (On Windows PowerShell, use `powershell -ExecutionPolicy Bypass -File scripts\sync_fixture_to_site.ps1 -FixtureId <fixture-id>`).
+         3. Verify the git status in the website repository (`git -C ../StampAlbumGen2-website status`), commit the synced files in `StampAlbumGen2-website` with conventional commits, and push if approved.
        - **Standard Page Size (US Letter Default)**: The standard default page size for documents, album generators, and examples is **US Letter** (`215.9 × 279.4 mm` / `8.5 × 11.0 in`), unless the specific fixture or test is explicitly testing A4 (`210.0 × 297.0 mm`) or other custom dimensions.
     4. Reference and link the issue in commits: `feat(<scope>): <description> (fixes #<num>)` or `fix(<scope>): <description> (fixes #<num>)`.
     5. Link the issue upon push and Pull Request (PR):
