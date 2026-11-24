@@ -117,7 +117,7 @@ impl NativeAlbum {
         let mut image_specs: Vec<NativeImageSpec> = Vec::new();
         let mut section_start = 0;
         let mut section_counts = Vec::new();
-        let mut page_breaks = Vec::new();
+        let mut page_breaks: Vec<NativePageBreak> = Vec::new();
         let mut numbering_section_starts = Vec::new();
         let mut headings: Vec<NativeHeadingItem> = Vec::new();
         let mut vertical = VerticalAlignment::Top;
@@ -195,18 +195,21 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                 }
                 "ALBUM_PAGES_BORDER" => {
-                    if border.is_some() {
-                        return Err(fail(format!("Duplicate {name} command")));
-                    }
                     if !matches!(args.len(), 3 | 4) {
                         return Err(fail(
                             "ALBUM_PAGES_BORDER requires three or four numeric arguments".into(),
                         ));
                     }
-                    border = Some(
+                    let parsed =
                         PageBorder::parse(&numbers(&name, &args, args.len()).map_err(&fail)?)
-                            .map_err(&fail)?,
-                    );
+                            .map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.border = Some(parsed);
+                    } else if border.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        border = Some(parsed);
+                    }
                 }
                 "COLOUR_ALBUM_BORDER" => {
                     let colour = words(&name, &args, 1)
@@ -214,12 +217,14 @@ impl NativeAlbum {
                         .into_iter()
                         .next()
                         .ok_or_else(|| fail(format!("{name} requires one named colour")))?;
-                    set_once(
-                        &mut border_colour,
-                        AlbumBorderColour::parse(&[&colour]).map_err(&fail)?,
-                        &name,
-                    )
-                    .map_err(&fail)?;
+                    let parsed = AlbumBorderColour::parse(&[&colour]).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.border_colour = Some(parsed);
+                    } else if border_colour.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        border_colour = Some(parsed);
+                    }
                 }
                 "ALBUM_PAGES_DECORATIVE_BORDER" | "NATIVE_PAGE_DECORATIVE_BORDER" => {
                     if args.len() != 1 {
@@ -228,7 +233,31 @@ impl NativeAlbum {
                         )));
                     }
                     let filename = quoted(&args[0], &name).map_err(&fail)?;
-                    set_once(&mut decorative_border_file, filename, &name).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        use super::commands::page::album_pages_decorative_border::{
+                            AlbumPagesDecorativeBorder, DecorativeBorderPolicy,
+                            resolve_definition_path,
+                        };
+                        if filename.eq_ignore_ascii_case("none") {
+                            pb.decorative_border = Some(None);
+                        } else {
+                            let resolved = resolve_definition_path(&filename, asset_root);
+                            let active_col = decorative_border_colour
+                                .or_else(|| pb.border_colour.map(|c| c.named()))
+                                .unwrap_or_else(|| {
+                                    border_colour
+                                        .map(|c| c.named())
+                                        .unwrap_or(NamedColour::BLACK)
+                                });
+                            let policy = DecorativeBorderPolicy::default().with_colour(active_col);
+                            let loaded = AlbumPagesDecorativeBorder::load(&resolved, policy)?;
+                            pb.decorative_border = Some(Some(loaded));
+                        }
+                    } else if decorative_border_file.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        decorative_border_file = Some(filename);
+                    }
                 }
                 "COLOUR_ALBUM_DECORATIVE_BORDER" | "COLOR_ALBUM_DECORATIVE_BORDER" => {
                     let colour = words(&name, &args, 1)
@@ -237,7 +266,15 @@ impl NativeAlbum {
                         .next()
                         .ok_or_else(|| fail(format!("{name} requires one named colour")))?;
                     let parsed = NamedColour::parse(&colour).map_err(&fail)?;
-                    set_once(&mut decorative_border_colour, parsed, &name).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        if let Some(Some(ref mut b)) = pb.decorative_border {
+                            b.set_colour(parsed);
+                        }
+                    } else if decorative_border_colour.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        decorative_border_colour = Some(parsed);
+                    }
                 }
                 "NATIVE_PAGE_TITLE" => {
                     if args.len() != 4 {
@@ -743,6 +780,9 @@ impl NativeAlbum {
                     page_breaks.push(NativePageBreak {
                         item_index: image_specs.len(),
                         spacing,
+                        decorative_border: None,
+                        border: None,
+                        border_colour: None,
                     });
                 }
                 "NATIVE_ROW_BREAK" => {

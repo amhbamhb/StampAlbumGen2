@@ -83,8 +83,8 @@ The `ALBUM_PAGES_BORDER` command configures single, double, or triple concentric
 )
 
 === Automatic Content Inset Calculation
-The vector engine dynamically computes the total border occupancy inset ($"occupancy"_"mm"$) reserving spacing only for active border rules:
-$ "occupancy" = w_"outer" + sum_(i in {"inner"_1, "inner"_2}, w_i > 0) (w_i + "gap") $
+The vector engine dynamically computes the total border occupancy inset ($\"occupancy\"_\"mm\"$) reserving spacing only for active border rules:
+$ "occupancy" = w_\"outer\" + sum_(i in {\"inner\"_1, \"inner\"_2}, w_i > 0) (w_i + \"gap\") $
 This mathematical guarantee ensures that title blocks, header captions, and stamp mounts never encroach upon or collide with page border strokes.
 
 == 5.5 Decorative Page Borders & Vintage Page Ornaments (`decorative-border-v1`)
@@ -127,3 +127,12 @@ When locating border definition files, the generator first searches the root `bo
 - *Baroque Corner Vignettes (`CornerStyleA.txt`, `CornerStyleB.txt`):* Ornate scrolled flourishes for classical issues.
 - *Architectural Pillars (`CornerAndVerticalStyleC.txt`):* Stately fluted classical column rules along vertical margins.
 - *Imperial Exhibition (`ImperialExhibition.txt`):* Deluxe custom showcase border uniting corner palmettes, classical pillar side rules, and refined double hairline framing.
+
+=== Dynamic Per-Page Border Switching
+In multi-page documents, collectors can dynamically change or reset decorative borders and line framing on individual pages. Specifying `NATIVE_PAGE_DECORATIVE_BORDER ("border.def")` (or `ALBUM_PAGES_DECORATIVE_BORDER`) immediately after a `NATIVE_PAGE_BREAK ()` overrides the border for that page without affecting preceding pages:
+
+```
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("borders/ImperialExhibition.txt")
+COLOUR_ALBUM_DECORATIVE_BORDER (navy)
+```

@@ -616,18 +616,7 @@ fn save_pdf(
             )
             .map_err(|error| format!("Cannot draw native page background image: {error}"))?;
         }
-        let mut strokes: Vec<_> = settings
-            .border()
-            .strokes(layout.margin_bounds)?
-            .into_iter()
-            .map(|stroke| {
-                (
-                    stroke.bounds,
-                    stroke.width_mm,
-                    settings.border_line_colour(stroke.line).rgb(),
-                )
-            })
-            .collect();
+        let mut strokes: Vec<_> = layout.border_strokes.clone();
         if let Some(proof) = proof.filter(|proof| proof.guide_enabled) {
             strokes.push((
                 layout.content_bounds,

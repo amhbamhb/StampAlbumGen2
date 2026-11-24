@@ -290,6 +290,10 @@ impl AlbumPagesDecorativeBorder {
         })
     }
 
+    pub fn set_colour(&mut self, colour: NamedColour) {
+        self.policy = self.policy.with_colour(colour);
+    }
+
     pub fn layout(&self, margin: Bounds, page_height_mm: f64) -> Result<DecorativeBorderLayout> {
         margin.inset(0.0, 0.0)?;
         if !page_height_mm.is_finite()

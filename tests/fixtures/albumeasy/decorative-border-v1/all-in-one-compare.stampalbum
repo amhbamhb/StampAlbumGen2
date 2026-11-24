@@ -1,21 +1,118 @@
 STAMPALBUM 1
-
+# All-in-One Comprehensive Decorative Border Showcase (12-Page Complete Suite)
+# Showcases every decorative border variation and authentic ornament library on its own page.
 ALBUM_PAGES_SIZE (215.9 279.4)
 ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
 ALBUM_PAGES_SPACING (4.0 10.0)
-ALBUM_PAGES_DECORATIVE_BORDER ("edge-mixed.def")
+ALBUM_PAGES_DECORATIVE_BORDER ("corner.def")
 COLOUR_ALBUM_BORDER (black)
-NATIVE_PAGE_TITLE (TB 15 "DECORATIVE PAGE BORDERS - PHILATELIC BENCHMARK" 3.0)
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+NATIVE_PAGE_TITLE (TB 15 "COMPREHENSIVE DECORATIVE BORDER SHOWCASE" 8)
 NATIVE_ROW_ALIGNMENT (center)
-NATIVE_STAMP_FRAME (0.25 black)
-NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)
-NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+NATIVE_STAMP_FRAME (0.25 black 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
 
-STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.05078125 "HN" 8 "San Marino")
-STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.05078125 "HN" 8 "New Zealand")
+# ==============================================================================
+# PAGE 1: Corner Flourishes & Triple Frame (corner.def)
+# ==============================================================================
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 1: San Marino - Corner Flourishes")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - Concentric Triple Rules")
 NATIVE_ROW_BREAK ()
-STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.05078125 "HN" 8 "Malta")
-STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.05078125 "HN" 8 "Sweden")
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta - Corner Inset 12.0 mm")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - Frame Rule Gap 1.0 mm")
 
+# ==============================================================================
+# PAGE 2: Complete Margin & Corner Suite (edge-mixed.def)
+# ==============================================================================
 NATIVE_PAGE_BREAK ()
-STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52.0 29.0 0.05078125 "HN" 8 "United States - 1847 Specimen")
+NATIVE_PAGE_DECORATIVE_BORDER ("edge-mixed.def")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 2: Malta - Corner Palmettes")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - Margin Center Flourishes")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino - Double Connecting Rules")
+
+# ==============================================================================
+# PAGE 3: Edge-Only Perimeter Accents (edge-only.def)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("edge-only.def")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 3: San Marino - Top & Bottom Accents")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - Open Corners Architecture")
+
+# ==============================================================================
+# PAGE 4: Pure Corner Flourishes (image-only.def)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("image-only.def")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 4: Malta - Pure 1.25x Flourishes")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - No Connecting Rules")
+
+# ==============================================================================
+# PAGE 5: Minimal Single Corner Baseline (omitted.def)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("omitted.def")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52.0 29.0 0.12 "HN" 8 "Page 5: US 1847 Franklin - Default Single Corner Baseline")
+
+# ==============================================================================
+# PAGE 6: Padded & Scaled Color Accent (padded.def)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("padded.def")
+COLOUR_ALBUM_DECORATIVE_BORDER (red)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 6: San Marino - Padded 0.5x Scale")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - Red Frame Accent Rules")
+
+# ==============================================================================
+# PAGE 7: Sparse Inset & Recessed Hairlines (sparse.def)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("sparse.def")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 7: Malta - Inward Negative Offsets")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - Recessed Double Hairlines")
+
+# ==============================================================================
+# PAGE 8: Classic Victorian Acanthus Borders (Classic.txt)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("borders/Classic.txt")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52.0 29.0 0.12 "HN" 8 "Page 8: US 1847 Franklin - Victorian Acanthus Scrolls")
+
+# ==============================================================================
+# PAGE 9: Art Deco Geometric Exposition (ArtDeco.txt)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("borders/ArtDeco.txt")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 9: San Marino - 1920s Stepped Corners")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - Geometric Perimeter Rules")
+
+# ==============================================================================
+# PAGE 10: Baroque Scrolled Corner Vignettes (CornerStyleA.txt)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("borders/CornerStyleA.txt")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52.0 29.0 0.12 "HN" 8 "Page 10: US 1847 Franklin - Baroque Scrolled Corner Flourishes")
+
+# ==============================================================================
+# PAGE 11: Architectural Classical Pillars (CornerAndVerticalStyleC.txt)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("borders/CornerAndVerticalStyleC.txt")
+COLOUR_ALBUM_DECORATIVE_BORDER (black)
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 11: Malta - Fluted Classical Column Rules")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - Pedestal Corner Vignettes")
+
+# ==============================================================================
+# PAGE 12: Imperial Exhibition Deluxe Border (ImperialExhibition.txt)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_DECORATIVE_BORDER ("borders/ImperialExhibition.txt")
+COLOUR_ALBUM_DECORATIVE_BORDER (navy)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52.0 29.0 0.12 "HN" 8 "Page 12: US 1847 Franklin - Imperial Exhibition Deluxe Navy Border")

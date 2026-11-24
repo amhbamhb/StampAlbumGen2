@@ -872,21 +872,25 @@ fn decorative_border_all_in_one_comparison_renders_clean_pages() -> Result<()> {
     let raw_path = root().join("all-in-one-compare-raw.stampalbum");
     let raw_pdf = root().join("all-in-one-compare-raw-native.pdf");
     let raw_pages = stamp_album_gen2::native_pdf::albumeasy::render_file(&raw_path, &raw_pdf)?;
-    assert_eq!(raw_pages, 2, "Raw-native must produce exactly 2 pages");
+    assert_eq!(raw_pages, 12, "Raw-native must produce exactly 12 pages");
     let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
-    assert_eq!(doc_raw.page_count()? as usize, 2);
+    assert_eq!(doc_raw.page_count()? as usize, 12);
 
     // 2. Native vector rendering
     let native_path = root().join("all-in-one-compare.stampalbum");
     let native_pdf = root().join("all-in-one-compare-native.pdf");
     let album = stamp_album_gen2::native_pdf::album::NativeAlbum::load(&native_path)?;
     let native_pages = album.write_pdf(&native_pdf)?;
-    assert_eq!(native_pages.len(), 2, "Native must produce exactly 2 pages");
+    assert_eq!(
+        native_pages.len(),
+        12,
+        "Native must produce exactly 12 pages"
+    );
     let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
-    assert_eq!(doc_native.page_count()? as usize, 2);
+    assert_eq!(doc_native.page_count()? as usize, 12);
 
     // 3. Verify US Letter dimensions for each page
-    for i in 0..2 {
+    for i in 0..12 {
         let page = doc_native.get_page(i)?;
         near(points_to_mm(page.media_box[2] - page.media_box[0]), 215.9);
         near(points_to_mm(page.media_box[3] - page.media_box[1]), 279.4);

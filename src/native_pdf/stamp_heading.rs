@@ -306,10 +306,19 @@ pub(crate) fn paginate_native_with_page_breaks(
         let mut top = page.layout.content_bounds.top;
         let mut start = 0;
         let mut active_settings = settings.clone();
-        let mut breaks = page_breaks.iter().copied().peekable();
+        let mut breaks = page_breaks.iter().cloned().peekable();
         for section in sections {
             while let Some(entry) = breaks.next_if(|entry| entry.item_index == start) {
                 active_settings.set_page_spacing(entry.spacing);
+                if let Some(ref border_opt) = entry.decorative_border {
+                    active_settings.set_decorative_border_opt(border_opt.clone());
+                }
+                if let Some(border) = entry.border {
+                    active_settings.set_border(border);
+                }
+                if let Some(colour) = entry.border_colour {
+                    active_settings.set_border_colour(colour);
+                }
                 super::pagination::advance_page(
                     &active_settings,
                     &mut pages,

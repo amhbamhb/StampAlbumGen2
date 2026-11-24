@@ -66,6 +66,7 @@ impl Bounds {
 
 #[derive(Clone, Debug)]
 pub struct PageLayout {
+    pub border_strokes: Vec<(Bounds, f64, [f64; 3])>,
     pub(crate) spacing_override: Option<Spacing>,
     pub size: PageSize,
     pub crop_marks: Option<CropMarksLayout>,
@@ -168,6 +169,10 @@ impl PageSettings {
 
     pub fn set_decorative_border(&mut self, border: AlbumPagesDecorativeBorder) {
         self.decorative_border = Some(border);
+    }
+
+    pub fn set_decorative_border_opt(&mut self, border: Option<AlbumPagesDecorativeBorder>) {
+        self.decorative_border = border;
     }
 
     pub fn set_title(&mut self, title: AlbumPagesTitle) {
@@ -619,7 +624,20 @@ impl PageSettings {
                 }
             }
         }
+        let border_strokes = self
+            .border
+            .strokes(margin_bounds)?
+            .into_iter()
+            .map(|stroke| {
+                (
+                    stroke.bounds,
+                    stroke.width_mm,
+                    self.border_line_colour(stroke.line).rgb(),
+                )
+            })
+            .collect();
         Ok(PageLayout {
+            border_strokes,
             spacing_override: self.spacing_override,
             size: self.size,
             decorative_border: self
