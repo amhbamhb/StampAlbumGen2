@@ -18,10 +18,10 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 | **Total Command Fixture Families** | **43** | All 43 integrated in website gallery |
 | **Total Reference Output PDFs** | **222** | All 222 verified against AlbumEasy 4.5.0 |
 | **Total AlbumEasy `.txt` Source Files** | **198** | Available for download |
-| **Existing `.stampalbum` Source Files** | **75** | 21 fixtures have native coverage |
-| **Fixtures with Native `.stampalbum` Files** | **21 / 43 (49%)** | Complete or partial native variations |
-| **Fixtures Missing `.stampalbum` Files** | **22 / 43 (51%)** | **TODO: Native files to be created** |
-| **Total Variations Missing `.stampalbum` Files** | **~147** | To be authored as Pass 1 (raw) and Pass 2 (native) |
+| **Existing `.stampalbum` Source Files** | **97** | 22 fixtures have native coverage |
+| **Fixtures with Native `.stampalbum` Files** | **22 / 43 (51%)** | Complete or partial native variations |
+| **Fixtures Missing `.stampalbum` Files** | **21 / 43 (49%)** | **TODO: Native files to be created** |
+| **Total Variations Missing `.stampalbum` Files** | **~127** | To be authored as Pass 1 (raw) and Pass 2 (native) |
 
 ---
 
@@ -30,14 +30,14 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 | Category | Fixtures | Completed | Partial | Missing | Status |
 |---|---|---|---|---|---|
 | **1. Page Setup & Layout** | 6 | 3 | 1 | 2 | In Progress |
-| **2. Page Borders & Decorative Framing** | 3 | 0 | 0 | 3 | Pending |
+| **2. Page Borders & Decorative Framing** | 3 | 2 | 0 | 1 | In Progress |
 | **3. Headers, Footers & Titles** | 10 | 1 | 4 | 5 | In Progress |
 | **4. Stamp Frames, Shapes & Rows** | 5 | 0 | 0 | 5 | Pending |
 | **5. Stamp Images & Placement** | 5 | 0 | 2 | 3 | In Progress |
 | **6. Text, Headings & Captions** | 4 | 1 | 0 | 3 | In Progress |
 | **7. Settings & Pagination** | 4 | 0 | 3 | 1 | In Progress |
 | **8. Real Stamp Collections** | 6 | 5 | 1 | 0 | Mostly Complete |
-| **Totals** | **43** | **10** | **11** | **22** | **21 Active / 22 TODO** |
+| **Totals** | **43** | **12** | **11** | **20** | **23 Active / 20 TODO** |
 
 ---
 
@@ -60,9 +60,9 @@ This report audits all 43 fixture families in `tests/fixtures/albumeasy/` to tra
 
 | Fixture Name | PDFs | Existing `.stampalbum` | Missing Variations (TODO) | Command / Notes |
 |---|---|---|---|---|
-| `border-v1` | 10 | 0 | `single`, `double`, `triple`, `disabled`, `inner-only`, `middle-only`, `legacy-double`, `omitted`, `skipped-middle`, `zero-gap` | `ALBUM_PAGES_BORDER` |
+| `border-v1` | 10 | 22 (`single`, `double`, `triple`, `legacy-double`, `disabled`, `omitted`, `inner-only`, `middle-only`, `skipped-middle`, `zero-gap`, `all-in-one-compare` + 11 raw pairs) | **None (Complete)** | `ALBUM_PAGES_BORDER` |
 | `border-colour-v1` | 6 | 0 | `alias`, `default`, `global-last`, `light-grey`, `named`, `white` | `COLOR_ALBUM_BORDER`, `COLOUR_ALBUM_BORDER` |
-| `decorative-border-v1` | 7 | 0 | `corner`, `edge-mixed`, `edge-only`, `image-only`, `omitted`, `padded`, `sparse` | `ALBUM_PAGES_DECORATIVE_BORDER` |
+| `decorative-border-v1` | 13 | 26 (`corner`, `edge-mixed`, `edge-only`, `image-only`, `omitted`, `padded`, `sparse`, `all-in-one-compare`, `classic-showcase`, `artdeco-showcase`, `corner-style-a-showcase`, `pillars-showcase`, `imperial-showcase` + 13 raw pairs) | **None (Complete)** | `ALBUM_PAGES_DECORATIVE_BORDER`, `COLOUR_ALBUM_DECORATIVE_BORDER` |
 
 ---
 

@@ -72,12 +72,12 @@ fn read_stamp_diag_order(output_txt: &std::path::Path) -> Vec<String> {
     let mut order = Vec::new();
     let content = fs::read_to_string(output_txt).expect("read output");
     for line in content.lines() {
-        if let Some(rest) = line.strip_prefix("# STAMP_DIAG ") {
-            if let Some(sg_start) = rest.find("sg=\"") {
-                let tail = &rest[sg_start + 4..];
-                if let Some(end) = tail.find('"') {
-                    order.push(tail[..end].to_string());
-                }
+        if let Some(rest) = line.strip_prefix("# STAMP_DIAG ")
+            && let Some(sg_start) = rest.find("sg=\"")
+        {
+            let tail = &rest[sg_start + 4..];
+            if let Some(end) = tail.find('"') {
+                order.push(tail[..end].to_string());
             }
         }
     }

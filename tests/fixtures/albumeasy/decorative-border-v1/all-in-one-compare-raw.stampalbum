@@ -1,0 +1,33 @@
+# All-in-One Decorative Border Comparison Benchmark (AlbumEasy)
+# Demonstrates corner and edge ornaments with connecting lines framing authentic philatelic specimens.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_DECORATIVE_BORDER ("edge-mixed.def")
+ALBUM_PAGES_TITLE (TB 15 "DECORATIVE PAGE BORDERS - PHILATELIC BENCHMARK" 3)
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+# ==============================================================================
+# PAGE 1: Corner & Edge Ornaments with Connecting Frame Lines
+# ==============================================================================
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Page 1: Classic Ornaments with Concentric Frame Lines")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (10.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 2: Archival Presentation Page
+# ==============================================================================
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Page 2: Archival Exhibition Presentation")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (52.0 29.0 "../stamp-pagination-v1/us-150.png" "" "" "United States - 1847 Specimen")

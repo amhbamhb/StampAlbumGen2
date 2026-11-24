@@ -255,17 +255,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    if aligned_runtime_dir.is_some() {
-        if let Err(e) = config::ensure_config_and_template_files(
+    if aligned_runtime_dir.is_some()
+        && let Err(e) = config::ensure_config_and_template_files(
             "config.toml",
             "config_template.toml",
             "StampAlbumGenerator2HelpManual.pdf",
-        ) {
-            log::warn!(
-                "Failed to ensure config template and manual file in aligned runtime dir: {}",
-                e
-            );
-        }
+        )
+    {
+        log::warn!(
+            "Failed to ensure config template and manual file in aligned runtime dir: {}",
+            e
+        );
     }
 
     match stamp_album_gen2::colnect::template::ensure_manual_import_files(std::path::Path::new("."))

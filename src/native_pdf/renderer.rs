@@ -277,6 +277,7 @@ pub fn write_native_album_pdf(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn write_native_album_pdf_with_sections(
     settings: &PageSettings,
     items: &[StampImageRowItem],

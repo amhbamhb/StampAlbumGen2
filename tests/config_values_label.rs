@@ -26,10 +26,10 @@ fn read_stamp_heading_label(output_txt: &std::path::Path) -> Option<String> {
     for line in s.lines() {
         if line.starts_with("STAMP_HEADING_VA(") {
             // Look for the quoted label inside the parentheses
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start + 1..].find('"') {
-                    return Some(line[start + 1..start + 1 + end].to_string());
-                }
+            if let Some(start) = line.find('"')
+                && let Some(end) = line[start + 1..].find('"')
+            {
+                return Some(line[start + 1..start + 1 + end].to_string());
             }
         }
     }

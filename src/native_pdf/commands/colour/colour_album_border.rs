@@ -18,4 +18,8 @@ impl AlbumBorderColour {
     pub fn rgb(self) -> [f64; 3] {
         self.0.rgb()
     }
+
+    pub fn named(self) -> NamedColour {
+        self.0
+    }
 }

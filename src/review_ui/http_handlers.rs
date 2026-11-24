@@ -418,19 +418,19 @@ fn handle_config_staleness_request(request: tiny_http::Request) -> Option<tiny_h
 
 fn get_help_manual_bytes() -> Vec<u8> {
     let local_file = Path::new("StampAlbumGenerator2HelpManual.pdf");
-    if local_file.is_file() {
-        if let Ok(bytes) = std::fs::read(local_file) {
-            return bytes;
-        }
+    if local_file.is_file()
+        && let Ok(bytes) = std::fs::read(local_file)
+    {
+        return bytes;
     }
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(parent) = exe_path.parent() {
-            let exe_help = parent.join("StampAlbumGenerator2HelpManual.pdf");
-            if exe_help.is_file() {
-                if let Ok(bytes) = std::fs::read(exe_help) {
-                    return bytes;
-                }
-            }
+    if let Ok(exe_path) = std::env::current_exe()
+        && let Some(parent) = exe_path.parent()
+    {
+        let exe_help = parent.join("StampAlbumGenerator2HelpManual.pdf");
+        if exe_help.is_file()
+            && let Ok(bytes) = std::fs::read(exe_help)
+        {
+            return bytes;
         }
     }
     crate::config::embedded_pdf_help().to_vec()
@@ -469,14 +469,13 @@ fn handle_help_manual_request(request: tiny_http::Request) -> Option<tiny_http::
 
     if method == Method::Post && path == "/api/open-help-manual" {
         let mut pdf_path = PathBuf::from("StampAlbumGenerator2HelpManual.pdf");
-        if !pdf_path.is_file() {
-            if let Ok(exe_path) = std::env::current_exe() {
-                if let Some(parent) = exe_path.parent() {
-                    let exe_help = parent.join("StampAlbumGenerator2HelpManual.pdf");
-                    if exe_help.is_file() {
-                        pdf_path = exe_help;
-                    }
-                }
+        if !pdf_path.is_file()
+            && let Ok(exe_path) = std::env::current_exe()
+            && let Some(parent) = exe_path.parent()
+        {
+            let exe_help = parent.join("StampAlbumGenerator2HelpManual.pdf");
+            if exe_help.is_file() {
+                pdf_path = exe_help;
             }
         }
 
@@ -2037,11 +2036,11 @@ pub(super) fn serve_review_requests(
                 let _ = request.respond(Response::empty(StatusCode(404)));
                 continue;
             }
-            if let Ok(canonical) = p.canonicalize() {
-                if !is_allowed_image_file(&canonical) {
-                    let _ = request.respond(Response::empty(StatusCode(403)));
-                    continue;
-                }
+            if let Ok(canonical) = p.canonicalize()
+                && !is_allowed_image_file(&canonical)
+            {
+                let _ = request.respond(Response::empty(StatusCode(403)));
+                continue;
             }
             match fs::File::open(&p) {
                 Ok(f) => {

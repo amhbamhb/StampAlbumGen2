@@ -13,15 +13,15 @@ fn extract_pdf_field(content: &str, field: &str) -> Option<String> {
     if let Some(pos) = content.find(field) {
         let rest = &content[pos + field.len()..];
         let rest = rest.trim_start();
-        if rest.starts_with('(') {
-            if let Some(end) = rest.find(')') {
-                return Some(rest[1..end].to_string());
-            }
-        } else if rest.starts_with('<') {
-            if let Some(end) = rest.find('>') {
-                let hex = &rest[1..end];
-                return decode_hex_string(hex);
-            }
+        if rest.starts_with('(')
+            && let Some(end) = rest.find(')')
+        {
+            return Some(rest[1..end].to_string());
+        } else if rest.starts_with('<')
+            && let Some(end) = rest.find('>')
+        {
+            let hex = &rest[1..end];
+            return decode_hex_string(hex);
         }
     }
     None
@@ -41,7 +41,9 @@ fn decode_hex_string(hex: &str) -> Option<String> {
             })
             .collect::<Vec<u8>>();
         let u16s = bytes
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
             .collect::<Vec<u16>>();
         String::from_utf16(&u16s).ok()

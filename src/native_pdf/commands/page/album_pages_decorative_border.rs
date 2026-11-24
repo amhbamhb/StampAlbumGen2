@@ -5,13 +5,29 @@ use crate::native_pdf::{
     units::{mm_to_points, points_to_mm},
 };
 use oxidize_pdf::graphics::Image;
-use std::{fs, io::Cursor, path::Path, sync::Arc};
+use std::{
+    fs,
+    io::Cursor,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 /// Explicit TOML policy for commands omitted from a definition file.
 #[derive(Clone, Copy, Debug)]
 pub struct DecorativeBorderPolicy {
     values: [f64; 13],
     colour: NamedColour,
+}
+
+impl Default for DecorativeBorderPolicy {
+    fn default() -> Self {
+        Self {
+            values: [
+                1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            colour: NamedColour::BLACK,
+        }
+    }
 }
 
 impl DecorativeBorderPolicy {
@@ -30,6 +46,11 @@ impl DecorativeBorderPolicy {
         "edge_padding_h_mm",
         "edge_padding_v_mm",
     ];
+
+    pub fn with_colour(mut self, colour: NamedColour) -> Self {
+        self.colour = colour;
+        self
+    }
 
     pub fn parse(values: &[f64], colour: NamedColour) -> Result<Self> {
         let values: [f64; 13] = values.try_into().map_err(
@@ -50,6 +71,31 @@ impl DecorativeBorderPolicy {
         }
         Ok(Self { values, colour })
     }
+}
+
+/// Resolves a decorative border definition file path per AlbumEasy search precedence:
+/// 1. If absolute path and exists, use directly.
+/// 2. Look in `borders/` subfolder relative to album location.
+/// 3. Look in `borders/` directory at current working directory.
+/// 4. Look directly relative to album location.
+pub fn resolve_definition_path(name: &str, base: &Path) -> PathBuf {
+    let candidate = Path::new(name);
+    if candidate.is_absolute() && candidate.exists() {
+        return candidate.to_path_buf();
+    }
+    let borders_sub = base.join("borders").join(name);
+    if borders_sub.exists() {
+        return borders_sub;
+    }
+    let borders_root = Path::new("borders").join(name);
+    if borders_root.exists() {
+        return borders_root;
+    }
+    let direct = base.join(name);
+    if direct.exists() {
+        return direct;
+    }
+    direct
 }
 
 #[derive(Clone, Debug)]
@@ -393,8 +439,20 @@ fn load_decorative_png(path: &Path, name: &str) -> Result<Arc<Image>> {
             path.display()
         ));
     }
-    let image = Image::from_png_data(bytes)
-        .map_err(|_| format!("Cannot decode decorative {name} PNG {}", path.display()))?;
+    let image = match Image::from_png_data(bytes) {
+        Ok(image) => image,
+        Err(_) => {
+            let mut normalized = Vec::new();
+            decoded
+                .to_rgba8()
+                .write_to(&mut Cursor::new(&mut normalized), image::ImageFormat::Png)
+                .map_err(|_| {
+                    format!("Cannot re-encode decorative {name} PNG {}", path.display())
+                })?;
+            Image::from_png_data(normalized)
+                .map_err(|_| format!("Cannot decode decorative {name} PNG {}", path.display()))?
+        }
+    };
     Ok(Arc::new(image))
 }
 

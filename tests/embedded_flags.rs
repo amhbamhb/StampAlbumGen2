@@ -37,12 +37,12 @@ async fn embedded_flags_writeback_and_load() {
     if cand2.exists() {
         found = true;
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let cand3 = parent.join("flags/flag_codes.json");
-            if cand3.exists() {
-                found = true;
-            }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent()
+    {
+        let cand3 = parent.join("flags/flag_codes.json");
+        if cand3.exists() {
+            found = true;
         }
     }
     assert!(

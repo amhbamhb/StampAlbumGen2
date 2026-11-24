@@ -1,0 +1,68 @@
+# All-in-One Page Border Comparison Benchmark (AlbumEasy)
+# Demonstrates single, double, triple, asymmetrical weights, and custom inner gaps.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)
+ALBUM_PAGES_TITLE (TB 15 "PAGE BORDER STYLES - ALBUMEASY BENCHMARK" 3)
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+# ==============================================================================
+# PAGE 1: Standard Double Border (0.5mm Outer, 0.1mm Inner, 1.25mm Gap)
+# ==============================================================================
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Page 1: Classic Double-Line Border (0.5 mm outer, 0.1 mm inner, 1.25 mm gap)")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (10.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 2: Triple Line Border (0.1mm Outer, 0.5mm Middle, 0.2mm Inner, 1.25mm Gap)
+# ==============================================================================
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Page 2: Triple-Line Border (0.1 mm outer, 0.5 mm middle, 0.2 mm inner)")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (10.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 3: Single Line Border (0.25mm Stroke)
+# ==============================================================================
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Page 3: Crisp Single-Line Border (0.25 mm stroke)")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (10.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")
+
+# ==============================================================================
+# PAGE 4: Inner-Only / Offset Line Border (0.3mm Stroke, 1.25mm Inset Gap)
+# ==============================================================================
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Page 4: Recessed Inner-Only Border (0.3 mm stroke, 1.25 mm gap)")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (10.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")

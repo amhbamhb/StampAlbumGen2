@@ -73,15 +73,15 @@ fn inner_strokes(content: &str) -> Result<Vec<Stroke>, String> {
                 end = None;
             }
             ContentOperation::Stroke => {
-                if colour.iter().any(|c| *c > 0.0) {
-                    if let (Some((x1, y1)), Some((x2, y2))) = (start, end) {
-                        strokes.push(Stroke {
-                            coordinates: [x1, y1, x2, y2],
-                            width,
-                            colour,
-                            dash: dash.clone(),
-                        });
-                    }
+                if colour.iter().any(|c| *c > 0.0)
+                    && let (Some((x1, y1)), Some((x2, y2))) = (start, end)
+                {
+                    strokes.push(Stroke {
+                        coordinates: [x1, y1, x2, y2],
+                        width,
+                        colour,
+                        dash: dash.clone(),
+                    });
                 }
                 start = None;
                 end = None;

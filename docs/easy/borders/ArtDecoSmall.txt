@@ -1,0 +1,14 @@
+# ----------------------------------------------------------------------------------------------
+# AlbumEasy decorative border description file
+#
+# This file may be used as is, or as an example for creating your own decorative borders.
+# ----------------------------------------------------------------------------------------------
+
+IMAGE_SCALE(0.12)
+IMAGE_CORNER("ArtDecoSmall.png")
+IMAGE_CORNER_PAD(6.7 6.7)
+
+BORDER_LINES(0.3 0.3 0.0 2.0)
+BORDER_PAD(1.95 1.95)
+BORDER_END_OFFSETS(1.0 1.0)
+

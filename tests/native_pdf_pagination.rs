@@ -245,7 +245,12 @@ fn exact_page_fit_needs_no_trailing_gap_and_one_more_row_creates_new_page() -> R
         bounds.right - bounds.left - 6.0,
         bounds.top - bounds.bottom - 6.0,
     )?;
-    let pages = paginate_stamp_items(&config.page_settings, &[exact.clone()], &policy, None)?;
+    let pages = paginate_stamp_items(
+        &config.page_settings,
+        std::slice::from_ref(&exact),
+        &policy,
+        None,
+    )?;
     assert_eq!(pages.len(), 1);
     assert!((pages[0].items[0].footprint.bottom - bounds.bottom).abs() < 1e-9);
     assert_eq!(

@@ -32,10 +32,10 @@ fn read_stamp_heading_size(output_txt: &std::path::Path) -> Option<i32> {
         if line.starts_with("STAMP_HEADING_VA(") {
             // Format: STAMP_HEADING_VA(<font> <size> "<label : sg>")
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() >= 3 {
-                if let Ok(sz) = parts[1].parse::<i32>() {
-                    return Some(sz);
-                }
+            if parts.len() >= 3
+                && let Ok(sz) = parts[1].parse::<i32>()
+            {
+                return Some(sz);
             }
         }
     }

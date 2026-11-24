@@ -99,6 +99,8 @@ impl NativeAlbum {
         let mut spacing = None;
         let mut border = None;
         let mut border_colour = None;
+        let mut decorative_border_file = None;
+        let mut decorative_border_colour = None;
         let mut page_title = None;
         let mut page_header = None;
         let mut header_number = None;
@@ -218,6 +220,24 @@ impl NativeAlbum {
                         &name,
                     )
                     .map_err(&fail)?;
+                }
+                "ALBUM_PAGES_DECORATIVE_BORDER" | "NATIVE_PAGE_DECORATIVE_BORDER" => {
+                    if args.len() != 1 {
+                        return Err(fail(format!(
+                            "{name} requires a quoted definition filename"
+                        )));
+                    }
+                    let filename = quoted(&args[0], &name).map_err(&fail)?;
+                    set_once(&mut decorative_border_file, filename, &name).map_err(&fail)?;
+                }
+                "COLOUR_ALBUM_DECORATIVE_BORDER" | "COLOR_ALBUM_DECORATIVE_BORDER" => {
+                    let colour = words(&name, &args, 1)
+                        .map_err(&fail)?
+                        .into_iter()
+                        .next()
+                        .ok_or_else(|| fail(format!("{name} requires one named colour")))?;
+                    let parsed = NamedColour::parse(&colour).map_err(&fail)?;
+                    set_once(&mut decorative_border_colour, parsed, &name).map_err(&fail)?;
                 }
                 "NATIVE_PAGE_TITLE" => {
                     if args.len() != 4 {
@@ -1073,7 +1093,7 @@ impl NativeAlbum {
         let page_size = page_size.ok_or("Missing required ALBUM_PAGES_SIZE command")?;
         let margins = margins.ok_or("Missing required ALBUM_PAGES_MARGINS command")?;
         let spacing = spacing.ok_or("Missing required ALBUM_PAGES_SPACING command")?;
-        let border = border.ok_or("Missing required ALBUM_PAGES_BORDER command")?;
+        let border = border.unwrap_or_default();
         let border_colour = border_colour.ok_or("Missing required COLOUR_ALBUM_BORDER command")?;
         let alignment = alignment.ok_or("Missing required NATIVE_ROW_ALIGNMENT command")?;
         let (frame_width_mm, frame_colour) =
@@ -1102,6 +1122,16 @@ impl NativeAlbum {
         let mut page_settings =
             PageSettings::new(page_size, margins, spacing, border, border_colour);
         page_settings.set_row_alignment(alignment);
+        if let Some(filename) = decorative_border_file {
+            use super::commands::page::album_pages_decorative_border::{
+                AlbumPagesDecorativeBorder, DecorativeBorderPolicy, resolve_definition_path,
+            };
+            let resolved = resolve_definition_path(&filename, asset_root);
+            let policy = DecorativeBorderPolicy::default()
+                .with_colour(decorative_border_colour.unwrap_or_else(|| border_colour.named()));
+            let border = AlbumPagesDecorativeBorder::load(&resolved, policy)?;
+            page_settings.set_decorative_border(border);
+        }
         if let Some(author) = author {
             page_settings.set_author(author);
         }

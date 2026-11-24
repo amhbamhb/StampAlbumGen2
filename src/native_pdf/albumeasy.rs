@@ -103,6 +103,9 @@ fn supported(name: &str) -> bool {
             | "ALBUM_PAGES_MARGINSE"
             | "ALBUM_PAGES_SPACING"
             | "ALBUM_PAGES_BORDER"
+            | "ALBUM_PAGES_DECORATIVE_BORDER"
+            | "COLOR_ALBUM_DECORATIVE_BORDER"
+            | "COLOUR_ALBUM_DECORATIVE_BORDER"
             | "ALBUM_PAGES_TITLE"
             | "ALBUM_PAGES_HEADER"
             | "ALBUM_PAGES_HEADER_NUMBER"
@@ -736,6 +739,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut title_colour = border_colour;
     let mut footer_colour = border_colour;
     let mut margin_colour = border_colour;
+    let mut decorative_border_file = None;
+    let mut decorative_border_colour = None;
     for c in commands.iter().take_while(|c| {
         !matches!(
             c.name.to_uppercase().as_str(),
@@ -782,6 +787,19 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             .map(|(i, _)| n(c, i))
                             .collect::<Result<Vec<_>>>()?,
                     )?);
+                }
+                "ALBUM_PAGES_DECORATIVE_BORDER" => {
+                    count(c, 1, 1)?;
+                    decorative_border_file = Some((c.line, text(c, 0)?.to_string()));
+                }
+                "COLOR_ALBUM_DECORATIVE_BORDER" | "COLOUR_ALBUM_DECORATIVE_BORDER" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err(
+                            "Decorative border colour requires an unquoted named colour".into()
+                        );
+                    }
+                    decorative_border_colour = Some(NamedColour::parse(&c.args[0].value)?);
                 }
                 "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
                     count(c, 1, 1)?;
@@ -928,7 +946,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         size.ok_or("Missing ALBUM_PAGES_SIZE")?,
         margins.ok_or("Missing ALBUM_PAGES_MARGINS")?,
         spacing.ok_or("Missing ALBUM_PAGES_SPACING")?,
-        border.ok_or("Missing ALBUM_PAGES_BORDER")?,
+        border.unwrap_or_default(),
         AlbumBorderColour::parse(&[&border_colour_name])?,
     );
     if let Some(author) = author {
@@ -939,6 +957,17 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     }
     if let Some(even) = even_margins {
         settings.set_even_margins(even);
+    }
+    if let Some((line, filename)) = decorative_border_file {
+        use crate::native_pdf::commands::page::album_pages_decorative_border::{
+            AlbumPagesDecorativeBorder, DecorativeBorderPolicy, resolve_definition_path,
+        };
+        let resolved = resolve_definition_path(&filename, assets);
+        let policy = DecorativeBorderPolicy::default()
+            .with_colour(decorative_border_colour.unwrap_or(border_colour));
+        let border = AlbumPagesDecorativeBorder::load(&resolved, policy)
+            .map_err(|e| format!("Line {line}: ALBUM_PAGES_DECORATIVE_BORDER: {e}"))?;
+        settings.set_decorative_border(border);
     }
     if let Some((font, size, text, gap)) = title {
         settings.set_title(AlbumPagesTitle::new(
@@ -1394,7 +1423,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         let width =
                             page.layout.content_bounds.right - page.layout.content_bounds.left;
                         if measured.lines.iter().any(|line| line.width_mm > width) {
-                            return Err(format!("{} exceeds content width", c.name).into());
+                            return Err(format!("{} exceeds content width", c.name));
                         }
                         let align = match c.name.to_uppercase().as_str() {
                             "PAGE_TEXT" => 0,

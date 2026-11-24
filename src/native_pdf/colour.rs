@@ -7,6 +7,8 @@ pub struct NamedColour {
 }
 
 impl NamedColour {
+    pub const BLACK: Self = Self { rgb: [0, 0, 0] };
+
     pub fn parse(name: &str) -> Result<Self> {
         let name = name.trim();
         let invalid = || {
