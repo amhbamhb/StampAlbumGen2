@@ -1,0 +1,70 @@
+STAMPALBUM 1
+# Comprehensive Native PDF Color Format Comparison Showcase (All 6 Variations)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)
+COLOUR_ALBUM_BORDER (#1E4A7A)
+NATIVE_PAGE_TITLE (TB 15 "NATIVE PDF COLOR SUPPORT - ALL-IN-ONE SHOWCASE" 8)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.35 #2B5B84 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+# ==============================================================================
+# PAGE 1: Hexadecimal 6-Digit Colors (#RRGGBB)
+# ==============================================================================
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 1: San Marino (#1E4A7A)")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "Page 1: New Zealand (#2B5B84)")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 1: Malta (#8B0000)")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Page 1: Sweden (#006400)")
+
+# ==============================================================================
+# PAGE 2: Hexadecimal 3-Digit Shorthand Colors (#RGB)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 2: San Marino (#036)")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "Page 2: New Zealand (#369)")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 2: Malta (#900)")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Page 2: Sweden (#080)")
+
+# ==============================================================================
+# PAGE 3: Bare Hexadecimal Colors (Without Hash Prefix)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 3: San Marino (1E4A7A)")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "Page 3: New Zealand (2E8B57)")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 3: Malta (800020)")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Page 3: Sweden (4B0082)")
+
+# ==============================================================================
+# PAGE 4: Functional RGB Integer Syntax: rgb(R, G, B)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 4: San Marino rgb(30,74,122)")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "Page 4: New Zealand rgb(34,139,34)")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 4: Malta rgb(178,34,34)")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Page 4: Sweden rgb(218,165,32)")
+
+# ==============================================================================
+# PAGE 5: Functional RGB Percentage Syntax: rgb(R%, G%, B%)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 5: San Marino rgb(12%,29%,48%)")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "Page 5: New Zealand rgb(13%,55%,13%)")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 5: Malta rgb(70%,13%,13%)")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Page 5: Sweden rgb(85%,65%,13%)")
+
+# ==============================================================================
+# PAGE 6: Rich SVG / CSS Named Color Palette
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "Page 6: San Marino (midnightblue)")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "Page 6: New Zealand (forestgreen)")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Page 6: Malta (crimson)")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Page 6: Sweden (darkgoldenrod)")

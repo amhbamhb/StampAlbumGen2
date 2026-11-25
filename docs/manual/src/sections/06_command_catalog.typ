@@ -172,6 +172,16 @@ This chapter catalogs all 43 command families featured on the official website g
   thumb_name: "decorative-border-v1--edge-mixed.png"
 )
 
+#command_entry(
+  "Color Formats & Hex/RGB Support (color-formats-v1)",
+  "Page Borders & Decorative Framing",
+  "COLOUR_ALBUM_BORDER (color) / COLOR_ALBUM_BORDER (color)",
+  "Universal color parser supporting 6-digit hex (#RRGGBB), 3-digit shorthand hex (#RGB), bare hex (RRGGBB), integer RGB rgb(r,g,b), percentage RGB rgb(r%,g%,b%), and SVG/CSS named colors across all border, text, and stamp commands.",
+  "COLOUR_ALBUM_BORDER (\"#1E4A7A\")",
+  "COLOUR_ALBUM_BORDER (#1E4A7A)\nNATIVE_STAMP_FRAME (0.5 \"rgb(30, 74, 122)\" 1.5)",
+  thumb_name: "color-formats-v1--hex-6digit.png"
+)
+
 == 6.3 Category 3: Headers, Footers & Titles
 
 #command_entry(

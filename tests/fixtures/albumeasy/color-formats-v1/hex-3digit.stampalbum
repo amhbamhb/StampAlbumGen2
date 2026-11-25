@@ -1,0 +1,19 @@
+STAMPALBUM 1
+# Hexadecimal 3-Digit Shorthand Color Showcase (#RGB)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)
+COLOUR_ALBUM_BORDER (#036)
+NATIVE_PAGE_TITLE (TB 15 "HEXADECIMAL 3-DIGIT SHORTHAND COLORS (#RGB)" 8)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.35 #369 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+# Row 1: #036 expands to #003366, #369 expands to #336699
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino - #036 Outer")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - #369 Frame")
+NATIVE_ROW_BREAK ()
+# Row 2: #900 (#990000) and #080 (#008800)
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta - #900 Red")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - #080 Green")

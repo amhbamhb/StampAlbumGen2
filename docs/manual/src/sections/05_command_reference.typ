@@ -84,7 +84,7 @@ The `ALBUM_PAGES_BORDER` command configures single, double, or triple concentric
 
 === Automatic Content Inset Calculation
 The vector engine dynamically computes the total border occupancy inset ($\"occupancy\"_\"mm\"$) reserving spacing only for active border rules:
-$ "occupancy" = w_\"outer\" + sum_(i in {\"inner\"_1, \"inner\"_2}, w_i > 0) (w_i + \"gap\") $
+$ "occupancy" = w_"outer" + sum_(i in {"inner"_1, "inner"_2}, w_i > 0) (w_i + "gap") $
 This mathematical guarantee ensures that title blocks, header captions, and stamp mounts never encroach upon or collide with page border strokes.
 
 == 5.5 Decorative Page Borders & Vintage Page Ornaments (`decorative-border-v1`)
@@ -136,3 +136,34 @@ NATIVE_PAGE_BREAK ()
 NATIVE_PAGE_DECORATIVE_BORDER ("borders/ImperialExhibition.txt")
 COLOUR_ALBUM_DECORATIVE_BORDER (navy)
 ```
+
+== 5.6 Color Formats and Palettes (`color-formats-v1`)
+
+The native PDF engine features a universal color parser supporting all standard web and graphic color representations across album styling commands:
+
+#table(
+  columns: (2.5fr, 2.5fr, 4fr),
+  fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
+  stroke: 0.5pt + rgb("#D0D5DD"),
+  table.header([*Color Format*], [*Example Syntax*], [*Philatelic Collector Application*]),
+  [6-Digit Hexadecimal], [`#1E4A7A` or `"#1E4A7A"`], [Exact digital matching of national flag colors, ink shades, or museum specimens.],
+  [3-Digit Shorthand Hex], [`#F80` or `"#036"`], [Convenient shorthand expanding `#RGB` to `#RRGGBB` for high-contrast accents.],
+  [Bare Hex (No `#`)], [`1E4A7A` or `2E8B57`], [Direct hexadecimal notation without requiring a leading hash sign.],
+  [Functional Integer RGB], [`"rgb(30, 74, 122)"`], [Standard red, green, blue color components calibrated from 0 to 255.],
+  [Functional Percent RGB], [`"rgb(12%, 29%, 48%)"`], [Proportional color mixing from 0% to 100% for fine-tuned tonal tints.],
+  [SVG / CSS Named Colors], [`navy`, `forestgreen`, `crimson`], [Intuitive English color names for quick styling without looking up numbers.],
+)
+
+=== Universal Color Availability
+Every native styling command accepts any of these color formats interchangeably:
+- `COLOUR_ALBUM_BORDER (color)` or `COLOR_ALBUM_BORDER (color)`
+- `COLOUR_ALBUM_DECORATIVE_BORDER (color)`
+- `NATIVE_STAMP_FRAME (line_w color addition_mm)`
+- `NATIVE_STAMP_INNER_BORDER (pad_mm thickness_mm style color)`
+- `NATIVE_STAMP_HEADING (LOCAL|VA font size "text" offset baseline_gap color)`
+- `NATIVE_STAMP_FOOTER_TEXT (font size color "left" "centre" "right")`
+- `NATIVE_PAGE_HEADER_NUMBER (...)` and `NATIVE_PAGE_FOOTER_NUMBER (...)`
+- `NATIVE_PAGE_MARGIN_TEXT (...)`
+
+=== Strict Print-Safe Color Integrity
+Archival stamp album printing requires consistent, opaque vector ink rendering. Transparency (alpha channels such as `rgba(...)` or `#RRGGBBAA`), `transparent`, and `none` are strictly rejected at parse time with clear diagnostics to guarantee that printed pages never suffer from color-mixing artifacts or invisible borders.

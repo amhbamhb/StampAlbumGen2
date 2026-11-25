@@ -211,7 +211,7 @@ impl NativeAlbum {
                         border = Some(parsed);
                     }
                 }
-                "COLOUR_ALBUM_BORDER" => {
+                "COLOUR_ALBUM_BORDER" | "COLOR_ALBUM_BORDER" => {
                     let colour = words(&name, &args, 1)
                         .map_err(&fail)?
                         .into_iter()
@@ -848,8 +848,8 @@ impl NativeAlbum {
                     ) {
                         return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
                     }
-                    if [0, 1, 6].iter().any(|&index| args[index].quoted) {
-                        return Err(fail(format!("{name} mode/font/colour must be unquoted")));
+                    if [0, 1].iter().any(|&index| args[index].quoted) {
+                        return Err(fail(format!("{name} mode and font must be unquoted")));
                     }
                     let padding = heading_padding.ok_or_else(|| {
                         fail("Missing explicit NATIVE_STAMP_HEADING_PADDING".into())
@@ -887,8 +887,8 @@ impl NativeAlbum {
                             "{name} must immediately follow STAMP_IMAGE or NATIVE_STAMP_HEADING"
                         )));
                     }
-                    if args[0].quoted || args[2].quoted {
-                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} font must be unquoted")));
                     }
                     let alignment = footer_text_alignment.ok_or_else(|| {
                         fail("Missing explicit NATIVE_STAMP_FOOTER_TEXT_ALIGN".into())
@@ -946,8 +946,8 @@ impl NativeAlbum {
                     ) {
                         return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
                     }
-                    if args[0].quoted || args[2].quoted {
-                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} font must be unquoted")));
                     }
                     if !args[3].quoted || !args[4].quoted {
                         return Err(fail(format!("{name} above and below text must be quoted")));
@@ -1000,8 +1000,8 @@ impl NativeAlbum {
                     let has_size = matches!(args.len(), 5 | 7);
                     let has_wrap_settings = matches!(args.len(), 6 | 7);
                     let colour_index = if has_size { 2 } else { 1 };
-                    if args[0].quoted || args[colour_index].quoted {
-                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} font must be unquoted")));
                     }
                     let (wrap_width_mm, max_lines, left_index, right_index) = if has_wrap_settings {
                         let width_index = colour_index + 1;
@@ -1401,11 +1401,19 @@ pub(super) struct Argument {
 pub(super) fn strip_comment(line: &str) -> &str {
     let mut quoted = false;
     let mut escaped = false;
+    let mut parens = 0usize;
     for (index, character) in line.char_indices() {
         if character == '"' && !escaped {
             quoted = !quoted;
         }
-        if character == '#' && !quoted {
+        if !quoted {
+            if character == '(' {
+                parens += 1;
+            } else if character == ')' {
+                parens = parens.saturating_sub(1);
+            }
+        }
+        if character == '#' && !quoted && parens == 0 {
             return &line[..index];
         }
         escaped = character == '\\' && !escaped;
@@ -1484,7 +1492,7 @@ fn parse_arguments(name: &str, body: &str) -> Result<Vec<Argument>> {
                 if character.is_whitespace() {
                     break;
                 }
-                if matches!(character, '(' | ')' | '"' | '#') {
+                if matches!(character, '(' | ')' | '"') {
                     return Err(format!("{name} has an invalid unquoted argument"));
                 }
                 value.push(character);
