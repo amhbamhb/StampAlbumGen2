@@ -97,6 +97,8 @@ fn supported(name: &str) -> bool {
     matches!(
         name,
         "ALBUM_PAGES_SIZE"
+            | "NATIVE_PAGES_SIZE"
+            | "NATIVE_PAGE_SIZE"
             | "ALBUM_AUTHOR"
             | "ALBUM_TITLE"
             | "ALBUM_PAGES_MARGINS"
@@ -758,7 +760,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     }) {
         let result = (|| -> Result<()> {
             match c.name.to_uppercase().as_str() {
-                "ALBUM_PAGES_SIZE" => {
+                "ALBUM_PAGES_SIZE" | "NATIVE_PAGES_SIZE" | "NATIVE_PAGE_SIZE" => {
                     count(c, 2, 2)?;
                     size = Some(PageSize::parse(&[n(c, 0)?, n(c, 1)?])?);
                 }
@@ -1213,6 +1215,18 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                                 )
                             })
                             .collect();
+                    }
+                }
+                "ALBUM_PAGES_SIZE" | "NATIVE_PAGES_SIZE" | "NATIVE_PAGE_SIZE" => {
+                    count(c, 2, 2)?;
+                    let parsed = PageSize::parse(&[n(c, 0)?, n(c, 1)?])?;
+                    page_settings.set_size(parsed);
+                    let page_num = pages.len();
+                    if let Some(page) = pages.last_mut() {
+                        let new_layout =
+                            page_settings.resolve_with_context(page_num, total, None)?;
+                        top = new_layout.content_bounds.top;
+                        page.layout = new_layout;
                     }
                 }
                 "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {

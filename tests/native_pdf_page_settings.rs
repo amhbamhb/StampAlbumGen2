@@ -525,3 +525,119 @@ fn spacing_all_in_one_comparison_renders_four_clean_pages_without_bottom_overflo
 
     Ok(())
 }
+
+#[test]
+fn page_size_render_all_fixtures_and_generate_native_pdfs() -> Result<()> {
+    use stamp_album_gen2::native_pdf::{album::NativeAlbum, albumeasy};
+
+    let root = fixture("page-size-v1");
+    let cases = [
+        ("a4-portrait", 210.0, 297.0),
+        ("a4-landscape", 297.0, 210.0),
+        ("us-letter", 215.9, 279.4),
+        ("fractional", 210.25, 297.75),
+    ];
+
+    for (stem, width_mm, height_mm) in cases {
+        let raw_path = root.join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = root.join(format!("{stem}-raw-native.pdf"));
+        let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, 1);
+        let doc_raw = PdfDocument::open(&raw_pdf)?;
+        let page_raw = doc_raw.get_page(0)?;
+        near(
+            points_to_mm(page_raw.media_box[2] - page_raw.media_box[0]),
+            width_mm,
+        );
+        near(
+            points_to_mm(page_raw.media_box[3] - page_raw.media_box[1]),
+            height_mm,
+        );
+
+        let native_path = root.join(format!("{stem}.stampalbum"));
+        let native_pdf = root.join(format!("{stem}-native.pdf"));
+        let album = NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(native_pages.len(), 1);
+        let doc_native = PdfDocument::open(&native_pdf)?;
+        let page_native = doc_native.get_page(0)?;
+        near(
+            points_to_mm(page_native.media_box[2] - page_native.media_box[0]),
+            width_mm,
+        );
+        near(
+            points_to_mm(page_native.media_box[3] - page_native.media_box[1]),
+            height_mm,
+        );
+    }
+
+    // Render all-in-one compare suite
+    let all_raw_path = root.join("all-in-one-compare-raw.stampalbum");
+    let all_raw_pdf = root.join("all-in-one-compare-raw-native.pdf");
+    let all_raw_pages = albumeasy::render_file(&all_raw_path, &all_raw_pdf)?;
+    assert_eq!(all_raw_pages, 4);
+
+    let doc_all_raw = PdfDocument::open(&all_raw_pdf)?;
+    assert_eq!(doc_all_raw.page_count()?, 4);
+    for (i, (_, w, h)) in cases.iter().enumerate() {
+        let p = doc_all_raw.get_page(i as u32)?;
+        near(points_to_mm(p.media_box[2] - p.media_box[0]), *w);
+        near(points_to_mm(p.media_box[3] - p.media_box[1]), *h);
+    }
+
+    let all_native_path = root.join("all-in-one-compare.stampalbum");
+    let all_native_pdf = root.join("all-in-one-compare-native.pdf");
+    let album_all = NativeAlbum::load(&all_native_path)?;
+    let all_native_pages = album_all.write_pdf(&all_native_pdf)?;
+    assert_eq!(all_native_pages.len(), 4);
+
+    let doc_all_native = PdfDocument::open(&all_native_pdf)?;
+    assert_eq!(doc_all_native.page_count()?, 4);
+    for (i, (_, w, h)) in cases.iter().enumerate() {
+        let p = doc_all_native.get_page(i as u32)?;
+        near(points_to_mm(p.media_box[2] - p.media_box[0]), *w);
+        near(points_to_mm(p.media_box[3] - p.media_box[1]), *h);
+    }
+
+    Ok(())
+}
+
+#[test]
+fn native_pages_size_alias_and_case_tolerance() -> Result<()> {
+    use stamp_album_gen2::native_pdf::{album::NativeAlbum, albumeasy};
+
+    let temporary = tempfile::tempdir()?;
+
+    // Test NATIVE_PAGES_SIZE with case insensitivity in raw mode
+    let raw_source = "native_pages_size (215.9 279.4)\nalbum_pages_margins (15 15 15 15)\nalbum_pages_spacing (3 4)\nalbum_pages_border (0.2 0 0 0)\nPAGE_START\nPAGE_TEXT_CENTRE (HN 12 \"TEST\")";
+    let raw_file = temporary.path().join("case-test-raw.stampalbum");
+    std::fs::write(&raw_file, raw_source)?;
+    let raw_pdf = temporary.path().join("case-test-raw.pdf");
+    let pages = albumeasy::render_file(&raw_file, &raw_pdf)?;
+    assert_eq!(pages, 1);
+    let doc = PdfDocument::open(&raw_pdf)?;
+    let page = doc.get_page(0)?;
+    near(points_to_mm(page.media_box[2] - page.media_box[0]), 215.9);
+    near(points_to_mm(page.media_box[3] - page.media_box[1]), 279.4);
+
+    // Test NATIVE_PAGE_SIZE in native album mode
+    let native_source = "STAMPALBUM 1\nNATIVE_PAGE_SIZE (297.0 210.0)\nALBUM_PAGES_MARGINS (15 15 15 15)\nALBUM_PAGES_SPACING (3 4)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nCOLOUR_ALBUM_BORDER (black)\nNATIVE_ROW_ALIGNMENT (center)\nNATIVE_STAMP_FRAME (0.25 black)\nNATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)\nNATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)\nSTAMP_IMAGE (\"/media/ray/2026-01-11/Rust/Rust/StampAlbumGen2/tests/fixtures/albumeasy/stamp-pagination-v1/us-150.png\" 52 29 0.05078125 \"HN\" 8 \"LANDSCAPE\")";
+    let native_file = temporary.path().join("case-test-native.stampalbum");
+    std::fs::write(&native_file, native_source)?;
+    let native_pdf = temporary.path().join("case-test-native.pdf");
+    let album = NativeAlbum::load(&native_file)?;
+    let pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(pages.len(), 1);
+    let doc_native = PdfDocument::open(&native_pdf)?;
+    let page_native = doc_native.get_page(0)?;
+    near(
+        points_to_mm(page_native.media_box[2] - page_native.media_box[0]),
+        297.0,
+    );
+    near(
+        points_to_mm(page_native.media_box[3] - page_native.media_box[1]),
+        210.0,
+    );
+
+    Ok(())
+}

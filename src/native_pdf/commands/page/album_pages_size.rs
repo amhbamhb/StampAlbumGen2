@@ -1,6 +1,6 @@
 use crate::native_pdf::{Result, commands::arguments, units::mm_to_points};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PageSize {
     width_mm: f64,
     height_mm: f64,

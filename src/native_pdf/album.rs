@@ -163,14 +163,16 @@ impl NativeAlbum {
                     let val = quoted_text(&args[0], &name).map_err(&fail)?;
                     set_once(&mut pdf_title, val, &name).map_err(&fail)?;
                 }
-                "ALBUM_PAGES_SIZE" => {
-                    set_once(
-                        &mut page_size,
-                        PageSize::parse(&numbers(&name, &args, 2).map_err(&fail)?)
-                            .map_err(&fail)?,
-                        &name,
-                    )
-                    .map_err(&fail)?;
+                "ALBUM_PAGES_SIZE" | "NATIVE_PAGES_SIZE" | "NATIVE_PAGE_SIZE" => {
+                    let parsed = PageSize::parse(&numbers(&name, &args, 2).map_err(&fail)?)
+                        .map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.page_size = Some(parsed);
+                    } else if page_size.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        page_size = Some(parsed);
+                    }
                 }
                 "ALBUM_PAGES_MARGINS" | "NATIVE_PAGES_MARGINS" | "NATIVE_PAGE_MARGINS" => {
                     set_once(
@@ -806,6 +808,7 @@ impl NativeAlbum {
                         decorative_border: None,
                         border: None,
                         border_colour: None,
+                        page_size: None,
                     });
                 }
                 "NATIVE_ROW_BREAK" => {

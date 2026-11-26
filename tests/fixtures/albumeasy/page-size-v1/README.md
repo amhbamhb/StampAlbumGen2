@@ -1,49 +1,88 @@
-# Page Size Specification (page-size-v1)
+# Page Dimensions and Orientations (`page-size-v1`)
 
-This fixture demonstrates and validates the AlbumEasy command `ALBUM_PAGES_SIZE`, configuring page media box dimensions in millimetres for standard and non-standard orientations.
+This fixture family tests and showcases page dimensions and orientations (`ALBUM_PAGES_SIZE` / `NATIVE_PAGES_SIZE` / `NATIVE_PAGE_SIZE`) in StampAlbumGen2 across both the native PDF engine and raw AlbumEasy format.
 
-## Fixture Overview
+---
 
-| Input | Reference PDF (AlbumEasy 4.5.0) | Pass 2 Native Album | Native Direct TXT/Raw | Description |
-|---|---|---|---|---|
-| [a4-portrait.txt](a4-portrait.txt) | [a4-portrait.reference.pdf](a4-portrait.reference.pdf) | [a4-portrait.stampalbum](a4-portrait.stampalbum) | [a4-portrait-raw.stampalbum](a4-portrait-raw.stampalbum) | Explicit A4 portrait (210.0 x 297.0 mm) |
-| [a4-landscape.txt](a4-landscape.txt) | [a4-landscape.reference.pdf](a4-landscape.reference.pdf) | [a4-landscape.stampalbum](a4-landscape.stampalbum) | [a4-landscape-raw.stampalbum](a4-landscape-raw.stampalbum) | A4 landscape orientation via inverted bounds (297.0 x 210.0 mm) |
-| [us-letter.txt](us-letter.txt) | [us-letter.reference.pdf](us-letter.reference.pdf) | [us-letter.stampalbum](us-letter.stampalbum) | [us-letter-raw.stampalbum](us-letter-raw.stampalbum) | Standard ANSI US Letter (215.9 x 279.4 mm) |
-| [fractional.txt](fractional.txt) | [fractional.reference.pdf](fractional.reference.pdf) | [fractional.stampalbum](fractional.stampalbum) | [fractional-raw.stampalbum](fractional-raw.stampalbum) | Fractional millimeter page sizing (210.25 x 297.75 mm) |
+## 1. Stamp Collector Guide (User-Friendly Overview)
 
-### Tested Commands
+### Why Page Dimensions Matter for Stamp Collectors
 
-- `ALBUM_PAGES_SIZE (width height)`: Sets global page dimensions in millimetres. Orientation (portrait vs landscape) is controlled directly by the width/height argument order without additional flags.
+Every stamp collector uses binders, page protectors, and exhibition frames with specific mechanical constraints:
 
-The command requires two finite positive numeric values in millimetres and must precede `PAGE_START`.
+- **US Letter (8.5 × 11.0 in / 215.9 × 279.4 mm)**: The North American standard size, ideal for standard 3-ring philatelic binders (e.g. Scott, Lighthouse, Harris, or generic office binders) and standard home/office inkjet or laser printers.
+- **A4 Portrait (210.0 × 297.0 mm)**: The international ISO 216 standard format widely used throughout Europe, Asia, and worldwide philatelic federations (e.g. FIP exhibition frames, Leuchtturm / Lighthouse album systems).
+- **A4 Landscape (297.0 × 210.0 mm)**: Horizontal orientation, essential for wide souvenir sheets, postal covers, panoramic cachets, booklet panes, and philatelic exhibit items that cannot fit upright within a standard portrait page.
+- **Fractional / Custom Dimensions**: Many classic European and specialty binders (e.g. Lindner 18-ring, Schaubek, or Davo) require customized millimeter dimensions (such as 210.25 × 297.75 mm or custom square formats).
 
-## Reference Provenance (AlbumEasy 4.5.0)
+### Setting Orientation (Portrait vs. Landscape)
 
-| Input File | Input SHA-256 | Reference PDF | Reference SHA-256 |
-|---|---|---|---|
-| `a4-portrait.txt` | `bd520a1224199f98bdc4a6df728472d8b3fffcaea379c265467f43839b7637a1` | `a4-portrait.reference.pdf` | `2e398e0b73ec28101607881677d2363f43a5ea6a6e5e51284355ba19b6b72a20` |
-| `a4-landscape.txt` | `23060cf98eac9ee4650f7ba4e94b812183ba5324d8c833852984e44be6262e7d` | `a4-landscape.reference.pdf` | `d533e35794e99ca44c214fdcc33ad119a49c917867cfc3e55c5d8669920ca89d` |
-| `us-letter.txt` | `20772c2f1e64072b6a38d049108009550357f8d0903c920e82d8aec0b7eb2860` | `us-letter.reference.pdf` | `46d308c593d531a8cb8c2db796e58faede01023422754d016dc7ed97e36713a6` |
-| `fractional.txt` | `70e2bd0613efff939039f1a8ff7b5a10461362061a35fb9186b7a051ae24556e` | `fractional.reference.pdf` | `dab9b279ebdb8d01398a0ef0cf064d9215a75c0175e5562c3e74882c23d36d6b` |
+In StampAlbumGen2 and AlbumEasy, page orientation is controlled purely by the numerical order of the width and height values:
 
-Negative diagnostic inputs:
-- `missing-size.txt`: `5e9157832de5106766fba37bb7674f1aedf33154000454ea59d79d87380b0902`
-- `missing-height.txt`: `ff5947a8eb96b1b8be73ff255f07a976ff9d3a0e1e98418ff24483ae2ae4e019`
+- When **`width < height`**: The page is rendered in **Portrait** orientation.
+- When **`width > height`**: The page is rendered in **Landscape** orientation.
 
-## Pass 2 Compatibility Files
+No cumbersome orientation mode switches or flags are required.
 
-1. **`*.stampalbum`**: Native `STAMPALBUM 1` documents verifying that the native vector engine parses and applies `ALBUM_PAGES_SIZE` for portrait, landscape, US Letter, and fractional dimensions.
-2. **`*-raw.stampalbum`**: Raw AlbumEasy command streams testing direct native loader compatibility.
+### Dynamic Page Sizing in Multi-Page Albums
 
-## Automated Verification
+Within a single album document, pages can dynamically adjust their dimensions or switch between portrait and landscape (for example, displaying regular stamps on portrait pages and transitioning to landscape for a wide souvenir sheet or cover on subsequent pages).
 
-Run the dedicated page settings regression suite:
+---
+
+## 2. Technical Reference & Command Grammar
+
+### Grammar & Argument Variations
+
+```text
+ALBUM_PAGES_SIZE ( width height )
+NATIVE_PAGES_SIZE ( width height )
+NATIVE_PAGE_SIZE ( width height )
+```
+
+| Parameter | Type       | Default             | Description                                                                             |
+| :-------- | :--------- | :------------------ | :-------------------------------------------------------------------------------------- |
+| `width`   | Float (mm) | `215.9` (US Letter) | Physical page width in millimetres. Must be finite, positive, and <= PDF point limits.  |
+| `height`  | Float (mm) | `279.4` (US Letter) | Physical page height in millimetres. Must be finite, positive, and <= PDF point limits. |
+
+### PDF MediaBox Calculation
+
+Given dimensions `(width_mm, height_mm)`:
+
+- Width in PDF points: `width_pt = width_mm * (72.0 / 25.4)`
+- Height in PDF points: `height_pt = height_mm * (72.0 / 25.4)`
+- MediaBox: `[0.0, 0.0, width_pt, height_pt]`
+
+All interior coordinates, margins, borders, and stamp item grids are calculated relative to these physical bounds.
+
+---
+
+## 3. Fixture Variations Inventory
+
+| Variation            | Command Signature                  | Physical MediaBox (mm)   | Orientation | Accent Color        |
+| :------------------- | :--------------------------------- | :----------------------- | :---------- | :------------------ |
+| `a4-portrait`        | `ALBUM_PAGES_SIZE (210.0 297.0)`   | `210.0 × 297.0`          | Portrait    | Navy `#1E4A7A`      |
+| `a4-landscape`       | `ALBUM_PAGES_SIZE (297.0 210.0)`   | `297.0 × 210.0`          | Landscape   | ForestGreen         |
+| `us-letter`          | `ALBUM_PAGES_SIZE (215.9 279.4)`   | `215.9 × 279.4`          | Portrait    | DarkRed             |
+| `fractional`         | `ALBUM_PAGES_SIZE (210.25 297.75)` | `210.25 × 297.75`        | Portrait    | Purple              |
+| `all-in-one-compare` | Multi-page (4 pages)               | All 4 sizes sequentially | Mixed       | Rainbow Progression |
+
+### Reference & Output Artifacts
+
+| Fixture              | Native Album                                                   | Native Direct Raw                                                      | Reference PDF (AlbumEasy 4.5.0)                          | Native PDF                                                     | Native Raw PDF                                                         |
+| :------------------- | :------------------------------------------------------------- | :--------------------------------------------------------------------- | :------------------------------------------------------- | :------------------------------------------------------------- | :--------------------------------------------------------------------- |
+| `a4-portrait`        | [a4-portrait.stampalbum](a4-portrait.stampalbum)               | [a4-portrait-raw.stampalbum](a4-portrait-raw.stampalbum)               | [a4-portrait.reference.pdf](a4-portrait.reference.pdf)   | [a4-portrait-native.pdf](a4-portrait-native.pdf)               | [a4-portrait-raw-native.pdf](a4-portrait-raw-native.pdf)               |
+| `a4-landscape`       | [a4-landscape.stampalbum](a4-landscape.stampalbum)             | [a4-landscape-raw.stampalbum](a4-landscape-raw.stampalbum)             | [a4-landscape.reference.pdf](a4-landscape.reference.pdf) | [a4-landscape-native.pdf](a4-landscape-native.pdf)             | [a4-landscape-raw-native.pdf](a4-landscape-raw-native.pdf)             |
+| `us-letter`          | [us-letter.stampalbum](us-letter.stampalbum)                   | [us-letter-raw.stampalbum](us-letter-raw.stampalbum)                   | [us-letter.reference.pdf](us-letter.reference.pdf)       | [us-letter-native.pdf](us-letter-native.pdf)                   | [us-letter-raw-native.pdf](us-letter-raw-native.pdf)                   |
+| `fractional`         | [fractional.stampalbum](fractional.stampalbum)                 | [fractional-raw.stampalbum](fractional-raw.stampalbum)                 | [fractional.reference.pdf](fractional.reference.pdf)     | [fractional-native.pdf](fractional-native.pdf)                 | [fractional-raw-native.pdf](fractional-raw-native.pdf)                 |
+| `all-in-one-compare` | [all-in-one-compare.stampalbum](all-in-one-compare.stampalbum) | [all-in-one-compare-raw.stampalbum](all-in-one-compare-raw.stampalbum) | _N/A (Multi-page showcase)_                              | [all-in-one-compare-native.pdf](all-in-one-compare-native.pdf) | [all-in-one-compare-raw-native.pdf](all-in-one-compare-raw-native.pdf) |
+
+---
+
+## 4. Automated Verification
+
+Run the dedicated page dimensions regression suite:
 
 ```sh
 cargo test --test native_pdf_page_settings
 ```
-
-This verifies:
-1. Native rendering of `.txt` inputs against frozen MediaBox dimensions in `expected.json`.
-2. Native loading and rendering of `.stampalbum` and `-raw.stampalbum` inputs.
-3. Strict validation on argument counts, non-positive numbers, and missing dimensions.

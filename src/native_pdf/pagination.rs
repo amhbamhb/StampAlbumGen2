@@ -6,6 +6,7 @@ use super::{
     commands::page::album_pages_border::PageBorder,
     commands::page::album_pages_crop_marks::AlbumPagesCropMarks,
     commands::page::album_pages_decorative_border::AlbumPagesDecorativeBorder,
+    commands::page::album_pages_size::PageSize,
     commands::page::album_pages_spacing::Spacing,
     document::{Bounds, PageLayout, PageSettings},
     stamp_box::StampBoxGeometry,
@@ -49,6 +50,7 @@ pub(crate) struct NativePageBreak {
     pub decorative_border: Option<Option<AlbumPagesDecorativeBorder>>,
     pub border: Option<PageBorder>,
     pub border_colour: Option<AlbumBorderColour>,
+    pub page_size: Option<PageSize>,
 }
 
 /// Final-count-sensitive layout is rerun until stable. Frames are never split,
@@ -222,6 +224,9 @@ fn paginate_pass(
             }
             if let Some(colour) = entry.border_colour {
                 active_settings.set_border_colour(colour);
+            }
+            if let Some(size) = entry.page_size {
+                active_settings.set_size(size);
             }
             advance_page(&active_settings, &mut pages, &mut page, total, date)?;
             top = page.layout.content_bounds.top;

@@ -73,10 +73,10 @@ This chapter catalogs all 43 command families featured on the official website g
 #command_entry(
   "Page Dimensions (page-size-v1)",
   "Page Setup & Layout",
-  "ALBUM_PAGES_SIZE (width_mm height_mm)",
+  "ALBUM_PAGES_SIZE / NATIVE_PAGES_SIZE (width_mm height_mm)",
   "Defines the global MediaBox dimensions. Orientation is determined directly by width vs height values.",
   "ALBUM_PAGES_SIZE (210.0 297.0)\nPAGE_START",
-  "STAMPALBUM 1\nALBUM_PAGES_SIZE (210.0 297.0)",
+  "STAMPALBUM 1\nNATIVE_PAGES_SIZE (210.0 297.0)",
   thumb_name: "page-size-v1--a4-portrait.png"
 )
 
