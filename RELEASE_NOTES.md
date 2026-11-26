@@ -1,5 +1,27 @@
 # Stamp Album Generator v1.15.7 Release Notes
 
+## 🌟 What's New for Stamp Collectors
+
+This release introduces comprehensive page layout, binding margin, and custom dimension enhancements for creating stamp album pages:
+
+### 📐 Printer Crop Marks & Cutting Guides (`crop-marks-v1`)
+- **Precise Trimming Guides**: Easily add crosshair crop marks to all four corners of your pages, making it simple to trim printed pages to exact album dimensions with a paper trimmer or guillotine cutter.
+- **Custom Color Accents**: Set crop mark colors using hex codes (`#1E4A7A`), functional RGB, or named colors (`forestgreen`, `darkred`, etc.) to match page borders or stand out against cream/textured archival paper.
+- **Flexible Styling**: All dimensions (hairline thickness, padding, arm lengths) are fully customizable or can be safely omitted for standard defaults.
+
+### 📖 Binding Margins & Facing Pages (`margins-v1`)
+- **Binder Clearance**: Set custom left, right, top, and bottom margins to provide ample clearance for 3-ring, 4-ring, spring-back, or screw-post binders so stamps and borders never get clipped.
+- **Book-Binding / Facing Pages (`ALBUM_PAGES_MARGINSE` / `NATIVE_PAGES_MARGINSE`)**: Configure independent odd and even page margins. Right-hand (recto) pages expand the left binding clearance, while left-hand (verso) pages expand the right clearance automatically across page breaks.
+
+### 📄 Page Dimensions & Orientations (`page-size-v1`)
+- **Standard & International Formats**: Full support for North American **US Letter** (8.5 × 11 in), international ISO **A4** (210 × 297 mm), and custom millimeter dimensions for European specialty albums (Lindner, Schaubek, Davo).
+- **Automatic Orientation**: Pages automatically render in Portrait (upright) or Landscape (horizontal) based on width and height without manual flags.
+- **Mixed Orientations in a Single Album**: Seamlessly include both portrait and landscape pages within the same album—ideal for mounting wide souvenir sheets or postal history covers on dedicated landscape pages!
+
+---
+
+# Stamp Album Generator v1.15.6 Release Notes
+
 ## Overview
 
 This release fixes critical page numbering issues and eliminates blank pages in album generation. The embedded reference stamp sizing system from v0.5.0 is maintained with improved reliability.
