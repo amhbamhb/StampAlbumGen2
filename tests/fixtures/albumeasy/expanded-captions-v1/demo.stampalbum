@@ -1,0 +1,34 @@
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (10.0 12.0)
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)
+COLOUR_ALBUM_BORDER (darkblue)
+NATIVE_PAGE_TITLE (TB 14 "EXPANDED CAPTION & SIDE LABEL DEMONSTRATION" 6)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+
+# Configure expanded footprint: allow captions to expand up to 150% of mount width,
+# with 2mm horizontal pad, 1mm vertical pad, and 2.5mm frame clearance gap.
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 150 2.0 1.0 2.5)
+
+# ------------------------------------------------------------------------------
+# ROW 1: Standard Stamp Mount (26 mm wide) with 150% Expanded Footprint (39 mm)
+# Demonstrates that long text stays on fewer lines without shrinking font size.
+# ------------------------------------------------------------------------------
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 26.0 31.0 0.25 "HN" 8 "Sweden 1858 Postal Definitive\n4 Skilling Banco Blue\nSpecimen Mount: 26 mm Wide\nCaption Footprint: ~38 mm Wide")
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 25.0 34.0 0.25 "HN" 8 "Malta 1899 Queen Victoria Definitive\n10s Blue-Black Rarity\nSpecimen Mount: 25 mm Wide\nCaption Footprint: ~37 mm Wide")
+
+NATIVE_ROW_BREAK ()
+
+# ------------------------------------------------------------------------------
+# ROW 2: Landscape Stamp Mount (36 mm wide) with Side Text Label
+# Syntax: NATIVE_STAMP_IMAGE_SIDE_LABEL (font size colour wrap_width max_lines "left" "right")
+# Demonstrates deep philatelic narrative placed cleanly beside the specimen mount.
+# ------------------------------------------------------------------------------
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 25.0 0.25 "HN" 8 "San Marino 1903 Definitive")
+NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 6.5 darkblue 38.0 8 "" "Issue Date: 1903\nPerforation: 11.5 x 12\nWatermark: Crown\nPrint: Typography\nEngraver: E. Mouchon")
+
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.25 "HN" 8 "New Zealand 1898 Scenic Mount")
+NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 6.5 forestgreen 38.0 8 "" "Mount Cook & Lake Taupo\nFirst Pictorial Issue\nPrinter: Waterlow & Sons\nDeep Blue & Sepia")

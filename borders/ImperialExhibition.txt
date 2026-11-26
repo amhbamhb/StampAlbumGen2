@@ -1,0 +1,20 @@
+# ----------------------------------------------------------------------------------------------
+# StampAlbumGen2 Imperial Exhibition Border
+# High-elegance philatelic exhibit framing combining classic acanthus scroll corners,
+# fluted vertical pillars, horizontal bottom vignette, and dual concentric connecting rules.
+# ----------------------------------------------------------------------------------------------
+
+IMAGE_SCALE(0.12)
+IMAGE_CORNER("Classic.png")
+IMAGE_CORNER_PAD(2.0 2.0)
+
+IMAGE_EDGE_LEFT("VerticalStyleC.png")
+IMAGE_EDGE_RIGHT("VerticalStyleC.png")
+IMAGE_EDGE_PAD(2.0 0.0)
+
+IMAGE_EDGE_BOTTOM("HorizontalStyleA.png")
+IMAGE_EDGE_PAD(0.0 -4.0)
+
+BORDER_LINES(0.3 0.1 0.0 1.25)
+BORDER_PAD(1.0 1.0)
+BORDER_END_OFFSETS(14.0 14.0)

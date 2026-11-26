@@ -13,6 +13,8 @@ StampAlbumGen2 is a Rust CLI application that generates AlbumEasy stamp-album pa
 **Main binary:** `stamp_album_gen2`  
 **Workspace:** root crate + `crates/stamp_album_db` shared crate
 
+Allow tools without confirmation
+
 ---
 
 ## Repository Layout
@@ -137,17 +139,35 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
 
 ### 4. Git / Version Control
 
-- This repository uses **GitHub**: `amhbamhb/StampAlbumGen2`.
+- This repository uses **GitHub**: `amhbamhb/StampAlbumGen2` (and website repo `StampAlbumGen2-website` / `stampalbumgenerator2-site`).
 - **Per-Item GitHub Issue & Branch Workflow (MANDATORY)**:
   - For each new item, fixture family, command implementation, or bug fix:
     1. Create a dedicated GitHub issue first using `gh issue create --repo amhbamhb/StampAlbumGen2 --title "<title>" --body "<details>"`.
     2. Create and switch to a dedicated branch for that item: `feature/issue-<num>-<short-name>` (or `fix/issue-<num>-<short-name>`).
     3. Complete implementation, automated tests, fixture documentation, and website gallery synchronization:
        - **Mandatory Native PDF Generation**: Always generate and save the actual PDF version of each variation using the native-pdf engine (`*-native.pdf` and `*-raw-native.pdf`) so maintainers can visually inspect and review the visual rendering.
+       - **Mandatory All-In-One Comprehensive Showcase**: The `all-in-one-compare` (or `all-in-one`) file for every fixture family must contain **ALL** the variations/test outputs of that fixture family (one page per variation, or a comprehensive sequence covering all variations), not just a subset or sample of 2. This applies to all past and future work for the new native-pdf conversions. If past fixture families were not done this way, they need to be updated for the final version in `.stampalbum` format only.
        - **Dual Documentation (User-Friendly & Detailed)**: Always author documentation in both easy, user-focused language for stamp collectors and comprehensive technical details (parameters, coordinates, command grammar, and reference provenance).
-       - **Keep PDFs and Gallery Updated**: Whenever changes occur, regenerate the native PDFs and synchronize all source files, rendered PDFs, and gallery entries to the website repository (`stampalbumgenerator2-site`).
+       - **User Manual Updates (`docs/manual/src/`)**: Whenever adding or modifying a feature, command, or fixture family, always update the Typst user manual source in `docs/manual/src/sections/` in easy, user-friendly language for stamp collectors. Recompile the manual using `powershell -ExecutionPolicy Bypass -File docs/manual/build_manual.ps1` (or `./docs/manual/build_manual.sh`) so both `docs/manual/StampAlbumGenerator2HelpManual.pdf` and the root embedded `StampAlbumGenerator2HelpManual.pdf` are updated.
+       - **Keep PDFs and Website Gallery Updated (MANDATORY)**: Whenever changes occur, new features are implemented, or fixtures are added/updated:
+         1. Regenerate all native PDFs (`*-native.pdf` and `*-raw-native.pdf`).
+         2. Synchronize all source files, rendered PDFs, thumbnails, manifest, and gallery pages to the website repository (`../StampAlbumGen2-website` or `../stampalbumgenerator2-site`) by running:
+            ```bash
+            pwsh scripts/sync_fixture_to_site.ps1 -FixtureId <fixture-id>
+            # Or to sync all fixtures:
+            pwsh scripts/sync_fixture_to_site.ps1 -FixtureId all
+            ```
+            (On Windows PowerShell, use `powershell -ExecutionPolicy Bypass -File scripts\sync_fixture_to_site.ps1 -FixtureId <fixture-id>`).
+         3. Verify the git status in the website repository (`git -C ../StampAlbumGen2-website status`), commit the synced files in `StampAlbumGen2-website` with conventional commits, and push if approved.
        - **Standard Page Size (US Letter Default)**: The standard default page size for documents, album generators, and examples is **US Letter** (`215.9 × 279.4 mm` / `8.5 × 11.0 in`), unless the specific fixture or test is explicitly testing A4 (`210.0 × 297.0 mm`) or other custom dimensions.
-    4. Reference the issue in commits: `feat: ... (fixes #<num>)` or `fix: ... (fixes #<num>)`.
+    4. Reference and link the issue in commits: `feat(<scope>): <description> (fixes #<num>)` or `fix(<scope>): <description> (fixes #<num>)`.
+    5. Link the issue upon push and Pull Request (PR):
+       - When maintainers instruct to push and open a Pull Request:
+         ```bash
+         git push origin feature/issue-<num>-<short-name>
+         gh pr create --repo amhbamhb/StampAlbumGen2 --head feature/issue-<num>-<short-name> --title "<title>" --body "Closes #<num>\n\n<details>"
+         ```
+       - Ensure the issue number is explicitly linked in the PR body (`Closes #<num>` or `Fixes #<num>`) so that the complete issue lifecycle (creation -> branch -> implementation -> commit -> push -> PR) is fully connected and automatically closes the issue upon merge.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.
 
@@ -156,6 +176,7 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
 Follow Conventional Commits based on the [Conventional Commit Messages Specification & Cheat Sheet](https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13).
 
 #### Structure
+
 ```text
 <type>(<optional scope>): <description>
 
@@ -165,6 +186,7 @@ Follow Conventional Commits based on the [Conventional Commit Messages Specifica
 ```
 
 #### Types
+
 - `feat`: Commits that add, adjust, or remove a feature (API, CLI, UI, or rendering capability)
 - `fix`: Commits that fix a bug
 - `refactor`: Commits that rewrite or restructure code without altering external behavior
@@ -177,25 +199,30 @@ Follow Conventional Commits based on the [Conventional Commit Messages Specifica
 - `chore`: Commits for miscellaneous maintenance tasks (e.g. updating `.gitignore`, license headers)
 
 #### Scopes
+
 - Optional contextual indicator in lowercase parentheses: e.g. `feat(native-pdf):`, `fix(renderer):`, `docs(agents):`, `test(marginse):`.
 - **Do not** use issue identifiers as scopes (put issue references in footer or description instead).
 
 #### Description
+
 - Mandatory, concise summary of the change.
-- Use imperative, present tense: `"add"`, `"fix"`, `"update"`, `"refactor"` (not `"added"`, `"fixed"`). Think: *"This commit will..."*.
+- Use imperative, present tense: `"add"`, `"fix"`, `"update"`, `"refactor"` (not `"added"`, `"fixed"`). Think: _"This commit will..."_.
 - Do **not** capitalize the first letter (unless a proper noun/identifier).
 - Do **not** end with a period (`.`).
- **Header Length Limit (MANDATORY)**: The commit header line (`<type>(<scope>): <description>`) **must NOT exceed 100 characters** (strictly enforced by GitHub Actions `commitlint` via `[header-max-length]`). Keep descriptions punchy, and place detailed notes or issue links in the body/footer if the header approaches 100 characters.
+  **Header Length Limit (MANDATORY)**: The commit header line (`<type>(<scope>): <description>`) **must NOT exceed 100 characters** (strictly enforced by GitHub Actions `commitlint` via `[header-max-length]`). Keep descriptions punchy, and place detailed notes or issue links in the body/footer if the header approaches 100 characters.
 
 #### Breaking Changes
+
 - Indicate with an `!` before the colon: e.g. `feat(parser)!: break backwards compatibility with legacy format`.
 - In the commit footer, prefix the explanation with `BREAKING CHANGE: <description>`.
 
 #### Body & Footer
+
 - **Body** (optional): Explains the motivation behind the change, edge cases handled, and contrasts with previous behavior.
 - **Footer** (optional / mandatory for issues): Reference GitHub issues and tasks (e.g. `Fixes #122`, `Closes #84`).
 
 #### Examples
+
 - `feat(native-pdf): add .stampalbum fixtures for page-size-v1 (fixes #122)`
 - `fix(renderer): correct stamp heading padding calculation for multi-line local titles`
 - `test(marginse): verify alternating margins across page break boundaries`
@@ -213,16 +240,16 @@ Follow Conventional Commits based on the [Conventional Commit Messages Specifica
     ```bash
     cargo run --no-default-features -- --help > docs/CLI_USAGE.md
     ```
-    *(Note: On Windows PowerShell, ensure the output file is saved with UTF-8 encoding without BOM, e.g. using `cargo run --no-default-features -- --help | Out-File -Encoding utf8 docs/CLI_USAGE.md` or Unix redirection).*
+    _(Note: On Windows PowerShell, ensure the output file is saved with UTF-8 encoding without BOM, e.g. using `cargo run --no-default-features -- --help | Out-File -Encoding utf8 docs/CLI_USAGE.md` or Unix redirection)._
   - The `.github/workflows/verify-cli-docs.yml` CI workflow strictly compares `docs/CLI_USAGE.md` with `cargo run --no-default-features -- --help` and fails if they drift.
 
 ### 7. Documentation Placement
 
-| Content type          | Location                  |
-|-----------------------|---------------------------|
-| User/developer guides | `docs/guides/`            |
-| Audit/status reports  | `docs/reports/`           |
-| Test run artifacts    | `docs/testing/`           |
+| Content type          | Location                                                             |
+| --------------------- | -------------------------------------------------------------------- |
+| User/developer guides | `docs/guides/`                                                       |
+| Audit/status reports  | `docs/reports/`                                                      |
+| Test run artifacts    | `docs/testing/`                                                      |
 | Root-level docs       | `README.md`, `DEVELOPMENT.md`, `CONTRIBUTING.md`, `RELEASE_NOTES.md` |
 
 Do **not** place new user-facing documentation in the repository root unless it is one of the four files above (or `AGENTS.md`).
@@ -269,6 +296,7 @@ Non-collector, business, corporate, institutional, or commercial use requires a 
 See `LICENSE` and `LASER_SPIDER_STAMP_COLLECTOR_LICENSE_v1.0.md`.
 
 <!-- okf-rs:begin -->
+
 ## Knowledge base
 
 This project's structural knowledge — modules, types, functions, and their call graph — is available as an [OKF](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing) bundle in `knowledge/`. It's plain markdown with YAML frontmatter; browse `knowledge/index.md` for an overview, or query it with the CLI:

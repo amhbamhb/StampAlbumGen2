@@ -830,3 +830,136 @@ fn actual_native_strokes_images_alpha_and_content_match_references() -> Result<(
     }
     Ok(())
 }
+
+#[test]
+fn generate_all_decorative_border_native_fixtures() -> Result<()> {
+    for (stem, expected_pages) in [
+        ("corner", 1),
+        ("edge-mixed", 1),
+        ("edge-only", 2),
+        ("image-only", 1),
+        ("omitted", 1),
+        ("padded", 2),
+        ("sparse", 1),
+    ] {
+        // 1. Raw-native rendering
+        let raw_path = root().join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = root().join(format!("{stem}-raw-native.pdf"));
+        let raw_pages = stamp_album_gen2::native_pdf::albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, expected_pages, "{stem} raw-native page count");
+        let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+        assert_eq!(doc_raw.page_count()? as usize, expected_pages);
+
+        // 2. Native vector rendering
+        let native_path = root().join(format!("{stem}.stampalbum"));
+        let native_pdf = root().join(format!("{stem}-native.pdf"));
+        let album = stamp_album_gen2::native_pdf::album::NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(
+            native_pages.len(),
+            expected_pages,
+            "{stem} native page count"
+        );
+        let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+        assert_eq!(doc_native.page_count()? as usize, expected_pages);
+    }
+    Ok(())
+}
+
+#[test]
+fn decorative_border_all_in_one_comparison_renders_clean_pages() -> Result<()> {
+    // 1. Raw-native rendering
+    let raw_path = root().join("all-in-one-compare-raw.stampalbum");
+    let raw_pdf = root().join("all-in-one-compare-raw-native.pdf");
+    let raw_pages = stamp_album_gen2::native_pdf::albumeasy::render_file(&raw_path, &raw_pdf)?;
+    assert_eq!(raw_pages, 12, "Raw-native must produce exactly 12 pages");
+    let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+    assert_eq!(doc_raw.page_count()? as usize, 12);
+
+    // 2. Native vector rendering
+    let native_path = root().join("all-in-one-compare.stampalbum");
+    let native_pdf = root().join("all-in-one-compare-native.pdf");
+    let album = stamp_album_gen2::native_pdf::album::NativeAlbum::load(&native_path)?;
+    let native_pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(
+        native_pages.len(),
+        12,
+        "Native must produce exactly 12 pages"
+    );
+    let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+    assert_eq!(doc_native.page_count()? as usize, 12);
+
+    // 3. Verify US Letter dimensions for each page
+    for i in 0..12 {
+        let page = doc_native.get_page(i)?;
+        near(points_to_mm(page.media_box[2] - page.media_box[0]), 215.9);
+        near(points_to_mm(page.media_box[3] - page.media_box[1]), 279.4);
+    }
+
+    Ok(())
+}
+
+#[test]
+fn authentic_albumeasy_sample_borders_load_and_layout() -> Result<()> {
+    let borders_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("borders");
+    for def_name in [
+        "ArtDeco.txt",
+        "ArtDecoSmall.txt",
+        "Bottom.txt",
+        "Classic.txt",
+        "CornerAndVerticalStyleC.txt",
+        "CornerStyleA.txt",
+        "CornerStyleB.txt",
+        "Coronet.txt",
+        "ImperialExhibition.txt",
+    ] {
+        let path = borders_dir.join(def_name);
+        let border = AlbumPagesDecorativeBorder::load(&path, DecorativeBorderPolicy::default())?;
+        let margin = Bounds {
+            left: 15.0,
+            right: 200.9,
+            bottom: 15.0,
+            top: 264.4,
+        };
+        let layout = border.layout(margin, 279.4)?;
+        assert!(
+            !layout.corners.is_empty() || !layout.edges.is_empty(),
+            "{def_name} must have ornaments"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn deluxe_authentic_border_showcases_render_clean_us_letter_pages() -> Result<()> {
+    for stem in [
+        "classic-showcase",
+        "artdeco-showcase",
+        "corner-style-a-showcase",
+        "pillars-showcase",
+        "imperial-showcase",
+    ] {
+        // 1. Raw-native rendering
+        let raw_path = root().join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = root().join(format!("{stem}-raw-native.pdf"));
+        let raw_pages = stamp_album_gen2::native_pdf::albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, 1, "{stem} raw-native page count");
+        let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+        assert_eq!(doc_raw.page_count()? as usize, 1);
+
+        // 2. Native vector rendering
+        let native_path = root().join(format!("{stem}.stampalbum"));
+        let native_pdf = root().join(format!("{stem}-native.pdf"));
+        let album = stamp_album_gen2::native_pdf::album::NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(native_pages.len(), 1, "{stem} native page count");
+        let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+        assert_eq!(doc_native.page_count()? as usize, 1);
+
+        // 3. Verify US Letter format
+        let page = doc_native.get_page(0)?;
+        near(points_to_mm(page.media_box[2] - page.media_box[0]), 215.9);
+        near(points_to_mm(page.media_box[3] - page.media_box[1]), 279.4);
+    }
+    Ok(())
+}

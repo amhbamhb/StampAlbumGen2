@@ -2,6 +2,10 @@
 
 use super::{
     Result,
+    commands::colour::colour_album_border::AlbumBorderColour,
+    commands::page::album_pages_border::PageBorder,
+    commands::page::album_pages_crop_marks::AlbumPagesCropMarks,
+    commands::page::album_pages_decorative_border::AlbumPagesDecorativeBorder,
     commands::page::album_pages_spacing::Spacing,
     document::{Bounds, PageLayout, PageSettings},
     stamp_box::StampBoxGeometry,
@@ -37,10 +41,14 @@ pub struct StampRowSection {
     pub alignment: RowAlignment,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct NativePageBreak {
     pub item_index: usize,
     pub spacing: Option<Spacing>,
+    pub crop_marks: Option<Option<AlbumPagesCropMarks>>,
+    pub decorative_border: Option<Option<AlbumPagesDecorativeBorder>>,
+    pub border: Option<PageBorder>,
+    pub border_colour: Option<AlbumBorderColour>,
 }
 
 /// Final-count-sensitive layout is rerun until stable. Frames are never split,
@@ -199,10 +207,22 @@ fn paginate_pass(
     let mut index = 0;
     let mut section_index = 0;
     let mut active_settings = settings.clone();
-    let mut breaks = page_breaks.iter().copied().peekable();
+    let mut breaks = page_breaks.iter().cloned().peekable();
     loop {
         while let Some(entry) = breaks.next_if(|entry| entry.item_index == index) {
             active_settings.set_page_spacing(entry.spacing);
+            if let Some(ref crop_marks_opt) = entry.crop_marks {
+                active_settings.set_crop_marks_opt(*crop_marks_opt);
+            }
+            if let Some(ref border_opt) = entry.decorative_border {
+                active_settings.set_decorative_border_opt(border_opt.clone());
+            }
+            if let Some(border) = entry.border {
+                active_settings.set_border(border);
+            }
+            if let Some(colour) = entry.border_colour {
+                active_settings.set_border_colour(colour);
+            }
             advance_page(&active_settings, &mut pages, &mut page, total, date)?;
             top = page.layout.content_bounds.top;
         }

@@ -135,10 +135,10 @@ This chapter catalogs all 43 command families featured on the official website g
 #command_entry(
   "Single, Double & Triple Borders (border-v1)",
   "Page Borders & Decorative Framing",
-  "ALBUM_PAGES_BORDER (outer_w middle_w inner_w gap_mm)",
-  "Renders elegant framing borders around page margins with custom line weights and intermediate gaps.",
-  "ALBUM_PAGES_BORDER (0.3 0.1 0.0 0.8)",
-  "ALBUM_PAGES_BORDER (0.3 0.1 0.0 0.8)\nCOLOUR_ALBUM_BORDER (navy)",
+  "ALBUM_PAGES_BORDER (outer_w middle_w inner_w gap_mm) [or 3-arg: outer inner gap]",
+  "Renders elegant single, double, or triple framing rules around page margins with exact line weights and separation gaps. Ideal for classic double-frame archival pages or deluxe triple-line commemorative presentation pages. When omitted, no border is printed.",
+  "ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)",
+  "ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)\nCOLOUR_ALBUM_BORDER (black)",
   thumb_name: "border-v1--double.png"
 )
 
@@ -155,11 +155,31 @@ This chapter catalogs all 43 command families featured on the official website g
 #command_entry(
   "Decorative Ornate Borders (decorative-border-v1)",
   "Page Borders & Decorative Framing",
-  "ALBUM_PAGES_DECORATIVE_BORDER (scale corner_pad edge_pad border_pad)",
-  "Embeds intricate vintage corner flourishes and edge decorations around the album perimeter.",
-  "ALBUM_PAGES_DECORATIVE_BORDER (1.0 2.0 2.0 2.0)",
-  "ALBUM_PAGES_DECORATIVE_BORDER (1.0 2.0 2.0 2.0)",
-  thumb_name: "decorative-border-v1--corner.png"
+  "ALBUM_PAGES_DECORATIVE_BORDER (\"border_definition_file\")",
+  "Embeds intricate vintage corner flourishes, margin edge ornaments, and vector framing rules around the album perimeter defined in an external border specification.",
+  "ALBUM_PAGES_DECORATIVE_BORDER (\"Classic.txt\")",
+  "ALBUM_PAGES_DECORATIVE_BORDER (\"borders/ImperialExhibition.txt\")\nCOLOUR_ALBUM_DECORATIVE_BORDER (navy)",
+  thumb_name: "decorative-border-v1--classic-showcase.png"
+)
+
+#command_entry(
+  "Decorative Border Color (decorative-border-colour-v1)",
+  "Page Borders & Decorative Framing",
+  "COLOUR_ALBUM_DECORATIVE_BORDER (colour_name)",
+  "Specifies the stroke color for vector framing lines drawn within decorative borders (defaults to black). Supports all standard named colors.",
+  "COLOUR_ALBUM_DECORATIVE_BORDER (darkblue)",
+  "COLOUR_ALBUM_DECORATIVE_BORDER (darkblue)",
+  thumb_name: "decorative-border-v1--edge-mixed.png"
+)
+
+#command_entry(
+  "Color Formats & Hex/RGB Support (color-formats-v1)",
+  "Page Borders & Decorative Framing",
+  "COLOUR_ALBUM_BORDER (color) / COLOR_ALBUM_BORDER (color)",
+  "Universal color parser supporting 6-digit hex (#RRGGBB), 3-digit shorthand hex (#RGB), bare hex (RRGGBB), integer RGB rgb(r,g,b), percentage RGB rgb(r%,g%,b%), and SVG/CSS named colors across all border, text, and stamp commands.",
+  "COLOUR_ALBUM_BORDER (\"#1E4A7A\")",
+  "COLOUR_ALBUM_BORDER (#1E4A7A)\nNATIVE_STAMP_FRAME (0.5 \"rgb(30, 74, 122)\" 1.5)",
+  thumb_name: "color-formats-v1--hex-6digit.png"
 )
 
 == 6.3 Category 3: Headers, Footers & Titles

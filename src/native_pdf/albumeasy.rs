@@ -102,7 +102,13 @@ fn supported(name: &str) -> bool {
             | "ALBUM_PAGES_MARGINS"
             | "ALBUM_PAGES_MARGINSE"
             | "ALBUM_PAGES_SPACING"
+            | "ALBUM_PAGES_CROP_MARKS"
+            | "NATIVE_PAGES_CROP_MARKS"
+            | "NATIVE_PAGE_CROP_MARKS"
             | "ALBUM_PAGES_BORDER"
+            | "ALBUM_PAGES_DECORATIVE_BORDER"
+            | "COLOR_ALBUM_DECORATIVE_BORDER"
+            | "COLOUR_ALBUM_DECORATIVE_BORDER"
             | "ALBUM_PAGES_TITLE"
             | "ALBUM_PAGES_HEADER"
             | "ALBUM_PAGES_HEADER_NUMBER"
@@ -736,6 +742,10 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut title_colour = border_colour;
     let mut footer_colour = border_colour;
     let mut margin_colour = border_colour;
+    let mut decorative_border_file = None;
+    let mut decorative_border_colour = None;
+    let mut crop_marks: Option<super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks> =
+        None;
     for c in commands.iter().take_while(|c| {
         !matches!(
             c.name.to_uppercase().as_str(),
@@ -783,6 +793,25 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             .collect::<Result<Vec<_>>>()?,
                     )?);
                 }
+                "ALBUM_PAGES_DECORATIVE_BORDER" => {
+                    count(c, 1, 1)?;
+                    decorative_border_file = Some((c.line, text(c, 0)?.to_string()));
+                }
+                "COLOR_ALBUM_DECORATIVE_BORDER" | "COLOUR_ALBUM_DECORATIVE_BORDER" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err(
+                            "Decorative border colour requires an unquoted named colour".into()
+                        );
+                    }
+                    decorative_border_colour = Some(NamedColour::parse(&c.args[0].value)?);
+                }
+                "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {
+                    use super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks;
+                    let arg_strs: Vec<&str> = c.args.iter().map(|a| a.value.as_str()).collect();
+                    crop_marks = AlbumPagesCropMarks::parse_command_args(&arg_strs)?;
+                }
+
                 "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
                     count(c, 1, 1)?;
                     border_colour = NamedColour::parse(&c.args[0].value)?;
@@ -928,9 +957,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         size.ok_or("Missing ALBUM_PAGES_SIZE")?,
         margins.ok_or("Missing ALBUM_PAGES_MARGINS")?,
         spacing.ok_or("Missing ALBUM_PAGES_SPACING")?,
-        border.ok_or("Missing ALBUM_PAGES_BORDER")?,
+        border.unwrap_or_default(),
         AlbumBorderColour::parse(&[&border_colour_name])?,
     );
+    if let Some(marks) = crop_marks {
+        settings.set_crop_marks(marks);
+    }
     if let Some(author) = author {
         settings.set_author(author);
     }
@@ -939,6 +971,17 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     }
     if let Some(even) = even_margins {
         settings.set_even_margins(even);
+    }
+    if let Some((line, filename)) = decorative_border_file {
+        use crate::native_pdf::commands::page::album_pages_decorative_border::{
+            AlbumPagesDecorativeBorder, DecorativeBorderPolicy, resolve_definition_path,
+        };
+        let resolved = resolve_definition_path(&filename, assets);
+        let policy = DecorativeBorderPolicy::default()
+            .with_colour(decorative_border_colour.unwrap_or(border_colour));
+        let border = AlbumPagesDecorativeBorder::load(&resolved, policy)
+            .map_err(|e| format!("Line {line}: ALBUM_PAGES_DECORATIVE_BORDER: {e}"))?;
+        settings.set_decorative_border(border);
     }
     if let Some((font, size, text, gap)) = title {
         settings.set_title(AlbumPagesTitle::new(
@@ -1047,6 +1090,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut footer_alignment = FooterTextAlignment::Align;
     let mut footer_padding_mm = 0.0;
     let mut vertical = VerticalAlignment::Top;
+    let mut current_border_colour = AlbumBorderColour::parse(&[&border_colour_name])?;
     let mut page_settings = settings.clone();
     for (command_index, c) in commands.iter().enumerate() {
         let result = (|| -> Result<()> {
@@ -1061,6 +1105,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         )?;
                     }
                     page_settings = settings.clone();
+                    page_settings.set_border_colour(current_border_colour);
                     if c.name == "PAGE_START_VAR" {
                         page_settings
                             .set_page_spacing(Some(Spacing::parse(&[n(c, 0)?, n(c, 1)?])?));
@@ -1143,6 +1188,38 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         "COLOR_STAMP_BORDER" | "COLOUR_STAMP_BORDER" => stamp_colour = colour,
                         "COLOR_STAMP_TEXT" | "COLOUR_STAMP_TEXT" => text_colour = colour,
                         _ => heading_colour = colour,
+                    }
+                }
+                "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
+                    count(c, 1, 1)?;
+                    let parsed = AlbumBorderColour::parse(&[&c.args[0].value])?;
+                    current_border_colour = parsed;
+                    page_settings.set_border_colour(parsed);
+                    if let Some(page) = pages.last_mut() {
+                        let margin_bounds = page.layout.margin_bounds;
+                        page.layout.border_strokes = page_settings
+                            .border()
+                            .strokes(margin_bounds)?
+                            .into_iter()
+                            .map(|stroke| {
+                                (
+                                    stroke.bounds,
+                                    stroke.width_mm,
+                                    page_settings.border_line_colour(stroke.line).rgb(),
+                                )
+                            })
+                            .collect();
+                    }
+                }
+                "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {
+                    use super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks;
+                    let arg_strs: Vec<&str> = c.args.iter().map(|a| a.value.as_str()).collect();
+                    let parsed = AlbumPagesCropMarks::parse_command_args(&arg_strs)?;
+                    page_settings.set_crop_marks_opt(parsed);
+                    if let Some(page) = pages.last_mut() {
+                        page.layout.crop_marks = parsed
+                            .map(|marks| marks.layout(page_settings.size()))
+                            .transpose()?;
                     }
                 }
                 "COLOR_STAMP_BACKGROUND" | "COLOUR_STAMP_BACKGROUND" => {
@@ -1394,7 +1471,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         let width =
                             page.layout.content_bounds.right - page.layout.content_bounds.left;
                         if measured.lines.iter().any(|line| line.width_mm > width) {
-                            return Err(format!("{} exceeds content width", c.name).into());
+                            return Err(format!("{} exceeds content width", c.name));
                         }
                         let align = match c.name.to_uppercase().as_str() {
                             "PAGE_TEXT" => 0,
@@ -1420,11 +1497,11 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     }
                 }
                 _ if c.name.starts_with("ALBUM_PAGES_")
-                    || c.name.starts_with("COLOR_ALBUM_")
+                    || (c.name.starts_with("COLOR_ALBUM_")
+                        && !matches!(c.name.to_uppercase().as_str(), "COLOR_ALBUM_BORDER"))
                     || matches!(
                         c.name.to_uppercase().as_str(),
-                        "COLOUR_ALBUM_BORDER"
-                            | "COLOUR_ALBUM_FOOTER"
+                        "COLOUR_ALBUM_FOOTER"
                             | "COLOUR_ALBUM_MARGIN_TXT"
                             | "COLOUR_ALBUM_HEADER"
                             | "COLOUR_ALBUM_TITLE"

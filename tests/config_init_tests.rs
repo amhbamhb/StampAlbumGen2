@@ -60,11 +60,11 @@ fn test_create_config_from_template_force_backups_and_overwrites() {
         if name.starts_with("config.toml.bak.") {
             // Attempt to read the backup file; be defensive if a transient IO
             // error occurs and continue scanning other entries.
-            if let Ok(bcontent) = fs::read_to_string(entry.path()) {
-                if bcontent.contains("orig = 1") {
-                    found_backup = true;
-                    break;
-                }
+            if let Ok(bcontent) = fs::read_to_string(entry.path())
+                && bcontent.contains("orig = 1")
+            {
+                found_backup = true;
+                break;
             }
         }
     }

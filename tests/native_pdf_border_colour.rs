@@ -48,7 +48,7 @@ fn manifest() -> Result<Value> {
 
 // Test-only adapter; the native production TXT interpreter is still pending.
 fn source_colour(source: &str) -> Result<AlbumBorderColour> {
-    let mut colour = AlbumBorderColour::parse(&["black"])?;
+    let mut colour = AlbumBorderColour::parse_strict(&["black"])?;
     for line in source.lines() {
         let Some((name, values)) = line.split_once('(') else {
             continue;
@@ -56,7 +56,7 @@ fn source_colour(source: &str) -> Result<AlbumBorderColour> {
         if matches!(name.trim(), "COLOUR_ALBUM_BORDER" | "COLOR_ALBUM_BORDER") {
             let (values, _) = values.split_once(')').ok_or("closing parenthesis")?;
             let args = values.split_whitespace().collect::<Vec<_>>();
-            colour = AlbumBorderColour::parse(&args)?;
+            colour = AlbumBorderColour::parse_strict(&args)?;
         }
     }
     Ok(colour)
@@ -133,11 +133,24 @@ fn colour_validation_rejects_unsupported_forms_without_echoing_values() -> Resul
         "rebeccapurple",
         "\"red\"",
     ] {
-        let error = AlbumBorderColour::parse(&[invalid])
+        let error = AlbumBorderColour::parse_strict(&[invalid])
             .err()
             .ok_or("must fail")?;
         assert!(!error.contains("private-value"));
     }
+    // Verify that the extended native parser accepts hex and rgb formats
+    assert_eq!(
+        AlbumBorderColour::parse(&["#1E4A7A"])?.rgb(),
+        [30.0 / 255.0, 74.0 / 255.0, 122.0 / 255.0]
+    );
+    assert_eq!(
+        AlbumBorderColour::parse(&["#F80"])?.rgb(),
+        [1.0, 136.0 / 255.0, 0.0]
+    );
+    assert_eq!(
+        AlbumBorderColour::parse(&["rgb(0,0,0)"])?.rgb(),
+        [0.0, 0.0, 0.0]
+    );
     Ok(())
 }
 
@@ -178,7 +191,7 @@ fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() ->
         );
         near(original.content_bounds.top, changed.content_bounds.top, 0.0);
     }
-    for invalid in ["\"private-value\"", "42", "true", "\"#F80\""] {
+    for invalid in ["\"private-value\"", "42", "true", "\"#GG00FF\""] {
         let result = NativePdfConfig::from_toml(&format!(
             "{PAGE}\n[colors]\ncolor_album_border = {invalid}\n"
         ));
@@ -186,6 +199,15 @@ fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() ->
         assert!(error.contains("color_album_border") || error.contains("COLOUR_ALBUM_BORDER"));
         assert!(!error.contains("private-value"));
     }
+    assert!(
+        NativePdfConfig::from_toml(&format!("color_album_border = \"#F80\"\n{PAGE}\n")).is_ok()
+    );
+    assert!(
+        NativePdfConfig::from_toml(&format!(
+            "color_album_border = \"rgb(30, 74, 122)\"\n{PAGE}\n"
+        ))
+        .is_ok()
+    );
     assert!(
         NativePdfConfig::from_toml(&format!(
             "color_album_border = \"black\"\n{PAGE}\ncolors = false\n"

@@ -22,12 +22,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for entry in fs::read_dir(&parent)? {
         let entry = entry?;
         let p = entry.path();
-        if let Some(fname) = p.file_name().and_then(|s| s.to_str()) {
-            if fname.starts_with(&bak_prefix) {
-                let full = parent.join(fname);
-                println!("Removing existing backup: {}", full.display());
-                let _ = fs::remove_file(full);
-            }
+        if let Some(fname) = p.file_name().and_then(|s| s.to_str())
+            && fname.starts_with(&bak_prefix)
+        {
+            let full = parent.join(fname);
+            println!("Removing existing backup: {}", full.display());
+            let _ = fs::remove_file(full);
         }
     }
 

@@ -1,6 +1,8 @@
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use stamp_album_gen2::native_pdf::{
+    album::NativeAlbum,
+    albumeasy,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder, album_pages_margins::Margins, album_pages_size::PageSize,
@@ -270,5 +272,75 @@ fn rendered_border_paths_match_frozen_references() -> Result<()> {
             }
         }
     }
+    Ok(())
+}
+
+#[test]
+fn border_individual_fixtures_render_native_and_raw_pdfs() -> Result<()> {
+    let cases = [
+        "single",
+        "double",
+        "triple",
+        "legacy-double",
+        "disabled",
+        "omitted",
+        "inner-only",
+        "middle-only",
+        "skipped-middle",
+        "zero-gap",
+    ];
+
+    for stem in cases {
+        let raw_path = root().join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = root().join(format!("{stem}-raw-native.pdf"));
+        let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, 1, "{stem} raw-native page count");
+        let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+        assert_eq!(doc_raw.page_count()?, 1, "{stem} raw-native doc count");
+
+        let native_path = root().join(format!("{stem}.stampalbum"));
+        let native_pdf = root().join(format!("{stem}-native.pdf"));
+        let album = NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(native_pages.len(), 1, "{stem} native page count");
+        let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+        assert_eq!(doc_native.page_count()?, 1, "{stem} native doc count");
+    }
+    Ok(())
+}
+
+#[test]
+fn border_all_in_one_comparison_renders_four_clean_pages() -> Result<()> {
+    // 1. Raw-native rendering
+    let raw_path = root().join("all-in-one-compare-raw.stampalbum");
+    let raw_pdf = root().join("all-in-one-compare-raw-native.pdf");
+    let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+    assert_eq!(raw_pages, 4, "Raw-native must produce exactly 4 pages");
+    let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+    assert_eq!(doc_raw.page_count()?, 4);
+
+    // 2. Native vector rendering
+    let native_path = root().join("all-in-one-compare.stampalbum");
+    let native_pdf = root().join("all-in-one-compare-native.pdf");
+    let album = NativeAlbum::load(&native_path)?;
+    let native_pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(native_pages.len(), 4, "Native must produce exactly 4 pages");
+    let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+    assert_eq!(doc_native.page_count()?, 4);
+
+    // 3. Verify US Letter dimensions for each page
+    for i in 0..4 {
+        let page = doc_native.get_page(i)?;
+        near(points_to_mm(page.media_box[2] - page.media_box[0]), 215.9);
+        near(points_to_mm(page.media_box[3] - page.media_box[1]), 279.4);
+    }
+
+    // 4. Verify authentic AlbumEasy reference PDF has 4 pages
+    let ref_path = root().join("all-in-one-compare.reference.pdf");
+    if ref_path.exists() {
+        let doc_ref = oxidize_pdf::parser::PdfDocument::open(&ref_path)?;
+        assert_eq!(doc_ref.page_count()?, 4, "Reference PDF must have 4 pages");
+    }
+
     Ok(())
 }

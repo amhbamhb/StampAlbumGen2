@@ -1,7 +1,7 @@
 use crate::native_pdf::{Result, commands::arguments, document::Bounds, units::mm_to_points};
 
 /// Explicit ALBUM_PAGES_BORDER arguments; zero widths disable border strokes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct PageBorder {
     widths_mm: [f64; 3],
     gap_mm: f64,

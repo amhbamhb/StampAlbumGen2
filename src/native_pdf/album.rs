@@ -99,6 +99,11 @@ impl NativeAlbum {
         let mut spacing = None;
         let mut border = None;
         let mut border_colour = None;
+        let mut crop_marks: Option<
+            Option<super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks>,
+        > = None;
+        let mut decorative_border_file = None;
+        let mut decorative_border_colour = None;
         let mut page_title = None;
         let mut page_header = None;
         let mut header_number = None;
@@ -115,7 +120,7 @@ impl NativeAlbum {
         let mut image_specs: Vec<NativeImageSpec> = Vec::new();
         let mut section_start = 0;
         let mut section_counts = Vec::new();
-        let mut page_breaks = Vec::new();
+        let mut page_breaks: Vec<NativePageBreak> = Vec::new();
         let mut numbering_section_starts = Vec::new();
         let mut headings: Vec<NativeHeadingItem> = Vec::new();
         let mut vertical = VerticalAlignment::Top;
@@ -193,61 +198,127 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                 }
                 "ALBUM_PAGES_BORDER" => {
-                    if border.is_some() {
-                        return Err(fail(format!("Duplicate {name} command")));
-                    }
                     if !matches!(args.len(), 3 | 4) {
                         return Err(fail(
                             "ALBUM_PAGES_BORDER requires three or four numeric arguments".into(),
                         ));
                     }
-                    border = Some(
+                    let parsed =
                         PageBorder::parse(&numbers(&name, &args, args.len()).map_err(&fail)?)
-                            .map_err(&fail)?,
-                    );
+                            .map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.border = Some(parsed);
+                    } else if border.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        border = Some(parsed);
+                    }
                 }
-                "COLOUR_ALBUM_BORDER" => {
+                "COLOUR_ALBUM_BORDER" | "COLOR_ALBUM_BORDER" => {
                     let colour = words(&name, &args, 1)
                         .map_err(&fail)?
                         .into_iter()
                         .next()
                         .ok_or_else(|| fail(format!("{name} requires one named colour")))?;
-                    set_once(
-                        &mut border_colour,
-                        AlbumBorderColour::parse(&[&colour]).map_err(&fail)?,
-                        &name,
-                    )
-                    .map_err(&fail)?;
+                    let parsed = AlbumBorderColour::parse(&[&colour]).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.border_colour = Some(parsed);
+                    } else if border_colour.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        border_colour = Some(parsed);
+                    }
+                }
+                "ALBUM_PAGES_DECORATIVE_BORDER" | "NATIVE_PAGE_DECORATIVE_BORDER" => {
+                    if args.len() != 1 {
+                        return Err(fail(format!(
+                            "{name} requires a quoted definition filename"
+                        )));
+                    }
+                    let filename = quoted(&args[0], &name).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        use super::commands::page::album_pages_decorative_border::{
+                            AlbumPagesDecorativeBorder, DecorativeBorderPolicy,
+                            resolve_definition_path,
+                        };
+                        if filename.eq_ignore_ascii_case("none") {
+                            pb.decorative_border = Some(None);
+                        } else {
+                            let resolved = resolve_definition_path(&filename, asset_root);
+                            let active_col = decorative_border_colour
+                                .or_else(|| pb.border_colour.map(|c| c.named()))
+                                .unwrap_or_else(|| {
+                                    border_colour
+                                        .map(|c| c.named())
+                                        .unwrap_or(NamedColour::BLACK)
+                                });
+                            let policy = DecorativeBorderPolicy::default().with_colour(active_col);
+                            let loaded = AlbumPagesDecorativeBorder::load(&resolved, policy)?;
+                            pb.decorative_border = Some(Some(loaded));
+                        }
+                    } else if decorative_border_file.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        decorative_border_file = Some(filename);
+                    }
+                }
+                "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {
+                    use super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks;
+                    let arg_strs: Vec<&str> = args.iter().map(|a| a.value.as_str()).collect();
+                    let parsed =
+                        AlbumPagesCropMarks::parse_command_args(&arg_strs).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.crop_marks = Some(parsed);
+                    } else if crop_marks.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        crop_marks = Some(parsed);
+                    }
+                }
+                "COLOUR_ALBUM_DECORATIVE_BORDER" | "COLOR_ALBUM_DECORATIVE_BORDER" => {
+                    let colour = words(&name, &args, 1)
+                        .map_err(&fail)?
+                        .into_iter()
+                        .next()
+                        .ok_or_else(|| fail(format!("{name} requires one named colour")))?;
+                    let parsed = NamedColour::parse(&colour).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        if let Some(Some(ref mut b)) = pb.decorative_border {
+                            b.set_colour(parsed);
+                        }
+                    } else if decorative_border_colour.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        decorative_border_colour = Some(parsed);
+                    }
                 }
                 "NATIVE_PAGE_TITLE" => {
-                    if args.len() != 4 {
+                    if !matches!(args.len(), 4 | 5) {
                         return Err(fail(format!(
-                            "{name} requires font, size in points, quoted text, and following space in millimetres"
+                            "{name} requires font, size in points, quoted text, following space in millimetres, and optional colour"
                         )));
                     }
                     let font = unquoted(&args[0], &name).map_err(&fail)?;
                     let size = number(&args[1], &name, 2).map_err(&fail)?;
                     let text = quoted(&args[2], &name).map_err(&fail)?;
                     let following_space = number(&args[3], &name, 4).map_err(&fail)?;
+                    let colour = if let Some(arg) = args.get(4) {
+                        NamedColour::parse(&arg.value).map_err(&fail)?
+                    } else {
+                        NamedColour::parse("black").map_err(&fail)?
+                    };
                     set_once(
                         &mut page_title,
-                        AlbumPagesTitle::new(
-                            &font,
-                            size,
-                            &text,
-                            following_space,
-                            0.0,
-                            NamedColour::parse("black").map_err(&fail)?,
-                        )
-                        .map_err(&fail)?,
+                        AlbumPagesTitle::new(&font, size, &text, following_space, 0.0, colour)
+                            .map_err(&fail)?,
                         &name,
                     )
                     .map_err(&fail)?;
                 }
                 "NATIVE_PAGE_HEADER" => {
-                    if args.len() != 6 {
+                    if !matches!(args.len(), 6 | 7) {
                         return Err(fail(format!(
-                            "{name} requires font, size in points, position, quoted text, margin padding, and minimum height"
+                            "{name} requires font, size in points, position, quoted text, margin padding, minimum height, and optional colour"
                         )));
                     }
                     let font = unquoted(&args[0], &name).map_err(&fail)?;
@@ -260,6 +331,11 @@ impl NativeAlbum {
                     let text = quoted(&args[3], &name).map_err(&fail)?;
                     let padding_mm = number(&args[4], &name, 5).map_err(&fail)?;
                     let minimum_height_mm = number(&args[5], &name, 6).map_err(&fail)?;
+                    let colour = if let Some(arg) = args.get(6) {
+                        NamedColour::parse(&arg.value).map_err(&fail)?
+                    } else {
+                        NamedColour::parse("black").map_err(&fail)?
+                    };
                     set_once(
                         &mut page_header,
                         AlbumPagesHeader::new(
@@ -269,7 +345,7 @@ impl NativeAlbum {
                             &text,
                             HeaderPadding::parse(&[padding_mm]).map_err(&fail)?,
                             minimum_height_mm,
-                            NamedColour::parse("black").map_err(&fail)?,
+                            colour,
                         )
                         .map_err(&fail)?,
                         &name,
@@ -362,9 +438,9 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                 }
                 "NATIVE_PAGE_FOOTER_NUMBER" => {
-                    if args.len() != 9 {
+                    if !matches!(args.len(), 8 | 9) {
                         return Err(fail(format!(
-                            "{name} requires font, point size, position, integer start, quoted prefix, quoted suffix, padding mm, minimum height mm, and colour"
+                            "{name} requires font, point size, position, integer start, quoted prefix, quoted suffix, padding mm, minimum height mm, and optional colour"
                         )));
                     }
                     let style = AlbumPagesFooter::new(
@@ -376,8 +452,11 @@ impl NativeAlbum {
                         FooterPadding::parse(&[number(&args[6], &name, 7).map_err(&fail)?])
                             .map_err(&fail)?,
                         number(&args[7], &name, 8).map_err(&fail)?,
-                        NamedColour::parse(&unquoted(&args[8], &name).map_err(&fail)?)
-                            .map_err(&fail)?,
+                        if let Some(arg) = args.get(8) {
+                            NamedColour::parse(&arg.value).map_err(&fail)?
+                        } else {
+                            NamedColour::parse("black").map_err(&fail)?
+                        },
                     )
                     .map_err(&fail)?;
                     set_once(
@@ -399,7 +478,7 @@ impl NativeAlbum {
                             "{name} requires font, size, quoted text, position, alignment, direction, explicit border gap mm and colour"
                         )));
                     }
-                    for index in [0, 3, 4, 5, 7] {
+                    for index in [0, 3, 4, 5] {
                         if args[index].quoted {
                             return Err(fail(format!(
                                 "{name} argument {} must be unquoted",
@@ -723,6 +802,10 @@ impl NativeAlbum {
                     page_breaks.push(NativePageBreak {
                         item_index: image_specs.len(),
                         spacing,
+                        crop_marks: None,
+                        decorative_border: None,
+                        border: None,
+                        border_colour: None,
                     });
                 }
                 "NATIVE_ROW_BREAK" => {
@@ -788,8 +871,8 @@ impl NativeAlbum {
                     ) {
                         return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
                     }
-                    if [0, 1, 6].iter().any(|&index| args[index].quoted) {
-                        return Err(fail(format!("{name} mode/font/colour must be unquoted")));
+                    if [0, 1].iter().any(|&index| args[index].quoted) {
+                        return Err(fail(format!("{name} mode and font must be unquoted")));
                     }
                     let padding = heading_padding.ok_or_else(|| {
                         fail("Missing explicit NATIVE_STAMP_HEADING_PADDING".into())
@@ -827,8 +910,8 @@ impl NativeAlbum {
                             "{name} must immediately follow STAMP_IMAGE or NATIVE_STAMP_HEADING"
                         )));
                     }
-                    if args[0].quoted || args[2].quoted {
-                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} font must be unquoted")));
                     }
                     let alignment = footer_text_alignment.ok_or_else(|| {
                         fail("Missing explicit NATIVE_STAMP_FOOTER_TEXT_ALIGN".into())
@@ -886,8 +969,8 @@ impl NativeAlbum {
                     ) {
                         return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
                     }
-                    if args[0].quoted || args[2].quoted {
-                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} font must be unquoted")));
                     }
                     if !args[3].quoted || !args[4].quoted {
                         return Err(fail(format!("{name} above and below text must be quoted")));
@@ -940,8 +1023,8 @@ impl NativeAlbum {
                     let has_size = matches!(args.len(), 5 | 7);
                     let has_wrap_settings = matches!(args.len(), 6 | 7);
                     let colour_index = if has_size { 2 } else { 1 };
-                    if args[0].quoted || args[colour_index].quoted {
-                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} font must be unquoted")));
                     }
                     let (wrap_width_mm, max_lines, left_index, right_index) = if has_wrap_settings {
                         let width_index = colour_index + 1;
@@ -1073,7 +1156,7 @@ impl NativeAlbum {
         let page_size = page_size.ok_or("Missing required ALBUM_PAGES_SIZE command")?;
         let margins = margins.ok_or("Missing required ALBUM_PAGES_MARGINS command")?;
         let spacing = spacing.ok_or("Missing required ALBUM_PAGES_SPACING command")?;
-        let border = border.ok_or("Missing required ALBUM_PAGES_BORDER command")?;
+        let border = border.unwrap_or_default();
         let border_colour = border_colour.ok_or("Missing required COLOUR_ALBUM_BORDER command")?;
         let alignment = alignment.ok_or("Missing required NATIVE_ROW_ALIGNMENT command")?;
         let (frame_width_mm, frame_colour) =
@@ -1102,6 +1185,19 @@ impl NativeAlbum {
         let mut page_settings =
             PageSettings::new(page_size, margins, spacing, border, border_colour);
         page_settings.set_row_alignment(alignment);
+        if let Some(marks) = crop_marks.flatten() {
+            page_settings.set_crop_marks(marks);
+        }
+        if let Some(filename) = decorative_border_file {
+            use super::commands::page::album_pages_decorative_border::{
+                AlbumPagesDecorativeBorder, DecorativeBorderPolicy, resolve_definition_path,
+            };
+            let resolved = resolve_definition_path(&filename, asset_root);
+            let policy = DecorativeBorderPolicy::default()
+                .with_colour(decorative_border_colour.unwrap_or_else(|| border_colour.named()));
+            let border = AlbumPagesDecorativeBorder::load(&resolved, policy)?;
+            page_settings.set_decorative_border(border);
+        }
         if let Some(author) = author {
             page_settings.set_author(author);
         }
@@ -1331,11 +1427,19 @@ pub(super) struct Argument {
 pub(super) fn strip_comment(line: &str) -> &str {
     let mut quoted = false;
     let mut escaped = false;
+    let mut parens = 0usize;
     for (index, character) in line.char_indices() {
         if character == '"' && !escaped {
             quoted = !quoted;
         }
-        if character == '#' && !quoted {
+        if !quoted {
+            if character == '(' {
+                parens += 1;
+            } else if character == ')' {
+                parens = parens.saturating_sub(1);
+            }
+        }
+        if character == '#' && !quoted && parens == 0 {
             return &line[..index];
         }
         escaped = character == '\\' && !escaped;
@@ -1414,7 +1518,7 @@ fn parse_arguments(name: &str, body: &str) -> Result<Vec<Argument>> {
                 if character.is_whitespace() {
                     break;
                 }
-                if matches!(character, '(' | ')' | '"' | '#') {
+                if matches!(character, '(' | ')' | '"') {
                     return Err(format!("{name} has an invalid unquoted argument"));
                 }
                 value.push(character);

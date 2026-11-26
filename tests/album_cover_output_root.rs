@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 struct RestoreRuntime {
     cwd: PathBuf,
     albums_root: Option<std::ffi::OsString>,

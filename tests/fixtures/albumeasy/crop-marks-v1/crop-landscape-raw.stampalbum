@@ -1,0 +1,21 @@
+# Printer Crop Marks - Landscape Orientation (Raw Mode)
+ALBUM_PAGES_SIZE (279.4 215.9)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+ALBUM_PAGES_CROP_MARKS (0.3 8.0 9.0 2.5 "forestgreen")
+ALBUM_PAGES_TITLE (TB 13 "PRINTER CROP MARKS (LANDSCAPE)" 3)
+COLOR_STAMP_BORDER ("forestgreen")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (TB 11 "VARIATION: LANDSCAPE ORIENTATION (FOREST GREEN)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Landscape US Letter layout (279.4 x 215.9mm) with forestgreen crop marks" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")

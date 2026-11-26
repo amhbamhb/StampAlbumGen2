@@ -1,0 +1,19 @@
+# ART DECO GEOMETRIC CORNER BORDER
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_DECORATIVE_BORDER ("borders/ArtDeco.txt")
+ALBUM_PAGES_TITLE (TB 15 "ART DECO GEOMETRIC CORNER BORDER" 4.0)
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "Authentic Exhibit Framing - ART DECO GEOMETRIC CORNER BORDER")
+PAGE_VSPACE (6.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (10.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")

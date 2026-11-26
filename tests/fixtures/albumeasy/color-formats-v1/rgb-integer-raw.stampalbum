@@ -1,0 +1,23 @@
+# Functional RGB Integer Color Showcase: rgb(R, G, B) - Raw Mode
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (1.5 0.5 0.0 1.5)
+COLOR_ALBUM_BORDER ("rgb(178, 34, 34)")
+ALBUM_PAGES_TITLE (TB 15 "FUNCTIONAL INTEGER RGB: rgb(R, G, B)" 3)
+COLOR_STAMP_BORDER ("rgb(30, 74, 122)")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (TB 11 "VARIATION: INTEGER RGB (rgb(178, 34, 34) BORDER, rgb(30, 74, 122) STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating functional rgb(r, g, b) syntax with integer components calibrated 0 to 255" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino rgb(178,34,34)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand rgb(30,74,122)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta rgb(34,139,34)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden rgb(218,165,32)")

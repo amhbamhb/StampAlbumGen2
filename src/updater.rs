@@ -517,12 +517,12 @@ pub fn run_update_pipeline(trigger_restart: bool) -> Result<String, String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        if let Some(target) = target_exe.as_ref() {
-            if let Ok(metadata) = std::fs::metadata(target) {
-                let mut perms = metadata.permissions();
-                perms.set_mode(0o755);
-                let _ = std::fs::set_permissions(target, perms);
-            }
+        if let Some(target) = target_exe.as_ref()
+            && let Ok(metadata) = std::fs::metadata(target)
+        {
+            let mut perms = metadata.permissions();
+            perms.set_mode(0o755);
+            let _ = std::fs::set_permissions(target, perms);
         }
     }
 

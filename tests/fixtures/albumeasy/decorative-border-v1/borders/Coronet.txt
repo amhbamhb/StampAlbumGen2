@@ -1,0 +1,10 @@
+# ----------------------------------------------------------------------------------------------
+# AlbumEasy decorative border description file
+# Created by Scott Miles
+# ----------------------------------------------------------------------------------------------
+
+IMAGE_SCALE(0.111)
+IMAGE_CORNER("Coronet.png")
+IMAGE_CORNER_PAD (6.3 6.3)
+BORDER_END_OFFSETS(20.0 20.0)
+BORDER_PAD (0.0 0.0)

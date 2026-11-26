@@ -1,0 +1,118 @@
+# Comprehensive Color Format Benchmark Suite (AlbumEasy Raw Mode - All 6 Variations)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (1.5 0.5 0.0 1.5)
+COLOR_ALBUM_BORDER ("#1E4A7A")
+ALBUM_PAGES_TITLE (TB 15 "COLOR SUPPORT - ALL-IN-ONE BENCHMARK" 3)
+COLOR_STAMP_BORDER ("#2B5B84")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+# ==============================================================================
+# Page 1: 6-Digit Hexadecimal Colors (#RRGGBB)
+# ==============================================================================
+PAGE_START
+COLOR_ALBUM_BORDER ("#1E4A7A")
+COLOR_STAMP_BORDER ("#2B5B84")
+PAGE_TEXT_CENTRE (TB 11 "PAGE 1: 6-DIGIT HEX (#1E4A7A BORDER, #2B5B84 STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating case-insensitive 6-digit hex notation #RRGGBB for exact archival ink matching" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (#1E4A7A)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (#2B5B84)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (#8B0000)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (#006400)")
+
+# ==============================================================================
+# Page 2: 3-Digit Shorthand Hex Colors (#RGB)
+# ==============================================================================
+PAGE_START
+COLOR_ALBUM_BORDER ("#F80")
+COLOR_STAMP_BORDER ("#036")
+PAGE_TEXT_CENTRE (TB 11 "PAGE 2: 3-DIGIT SHORTHAND HEX (#F80 BORDER, #036 STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating shorthand #RGB expanding duplicated nibbles to 24-bit RGB (#F80 -> #FF8800)" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (#F80)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (#036)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (#C00)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (#080)")
+
+# ==============================================================================
+# Page 3: Bare Hexadecimal Colors (Without Hash Prefix)
+# ==============================================================================
+PAGE_START
+COLOR_ALBUM_BORDER ("2E8B57")
+COLOR_STAMP_BORDER ("800020")
+PAGE_TEXT_CENTRE (TB 11 "PAGE 3: BARE HEX (2E8B57 BORDER, 800020 STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating bare hexadecimal notation without leading hash signs" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (2E8B57)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (1E4A7A)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (800020)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (4B0082)")
+
+# ==============================================================================
+# Page 4: Functional Integer RGB Syntax: rgb(R, G, B)
+# ==============================================================================
+PAGE_START
+COLOR_ALBUM_BORDER ("rgb(178, 34, 34)")
+COLOR_STAMP_BORDER ("rgb(30, 74, 122)")
+PAGE_TEXT_CENTRE (TB 11 "PAGE 4: INTEGER RGB (rgb(178, 34, 34) BORDER, rgb(30, 74, 122) STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating functional rgb(r, g, b) syntax with integer components calibrated 0 to 255" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino rgb(178,34,34)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand rgb(30,74,122)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta rgb(34,139,34)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden rgb(218,165,32)")
+
+# ==============================================================================
+# Page 5: Functional Percentage RGB Syntax: rgb(R%, G%, B%)
+# ==============================================================================
+PAGE_START
+COLOR_ALBUM_BORDER ("rgb(50%, 0%, 50%)")
+COLOR_STAMP_BORDER ("rgb(12%, 29%, 48%)")
+PAGE_TEXT_CENTRE (TB 11 "PAGE 5: PERCENT RGB (rgb(50%, 0%, 50%) BORDER, rgb(12%, 29%, 48%) STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating functional rgb(r%, g%, b%) syntax with percentage-based mixing 0% to 100%" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino rgb(50%,0%,50%)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand rgb(12%,29%,48%)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta rgb(80%,15%,25%)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden rgb(85%,65%,13%)")
+
+# ==============================================================================
+# Page 6: SVG and CSS Standard Named Colors
+# ==============================================================================
+PAGE_START
+COLOR_ALBUM_BORDER ("forestgreen")
+COLOR_STAMP_BORDER ("midnightblue")
+PAGE_TEXT_CENTRE (TB 11 "PAGE 6: NAMED COLORS (forestgreen BORDER, midnightblue STAMPS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Demonstrating standard SVG / CSS color keyword names: forestgreen, midnightblue, crimson, darkmagenta" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (forestgreen)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (midnightblue)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (crimson)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (darkmagenta)")

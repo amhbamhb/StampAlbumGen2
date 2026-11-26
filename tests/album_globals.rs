@@ -6,10 +6,12 @@ fn filename_generation_with_year_range() {
     // Mirror the filename-generation logic used by generate_album_output
     let album_name = "Israel";
     let make_name = |start: Option<i32>, end: Option<i32>| {
-        if let (Some(s), Some(e)) = (start, end) {
-            if s > 0 && e < 9999 && s <= e {
-                return format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e);
-            }
+        if let (Some(s), Some(e)) = (start, end)
+            && s > 0
+            && e < 9999
+            && s <= e
+        {
+            return format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e);
         }
         format!("{}.txt", album_name.replace(' ', "-"))
     };

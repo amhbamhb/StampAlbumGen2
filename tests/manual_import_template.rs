@@ -164,7 +164,7 @@ fn documented_example_is_accepted_by_the_existing_parser() {
         .split_once("```csv")
         .expect("CSV example start")
         .1
-        .trim_start_matches(|c| c == '\r' || c == '\n')
+        .trim_start_matches(['\r', '\n'])
         .split_once("```")
         .expect("CSV example end")
         .0;

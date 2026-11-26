@@ -1,5 +1,6 @@
 // benches/my_bench.rs
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
+use std::hint::black_box;
 
 /// Sums all integers from 0 to n.
 fn sum_to(n: u64) -> u64 {
