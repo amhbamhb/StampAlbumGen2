@@ -158,7 +158,7 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
             pwsh scripts/sync_fixture_to_site.ps1 -FixtureId all
             ```
             (On Windows PowerShell, use `powershell -ExecutionPolicy Bypass -File scripts\sync_fixture_to_site.ps1 -FixtureId <fixture-id>`).
-         3. Verify the git status in the website repository (`git -C ../StampAlbumGen2-website status`), commit the synced files in `StampAlbumGen2-website` with conventional commits, and push if approved.
+         3. Verify the git status in the website repository (`git -C ../StampAlbumGen2-website status`), commit the synced files in `StampAlbumGen2-website` with conventional commits, and immediately push to `origin main` (`git -C ../StampAlbumGen2-website push origin main`) so the live website gallery is continuously kept up-to-date with every fixture item.
        - **Standard Page Size (US Letter Default)**: The standard default page size for documents, album generators, and examples is **US Letter** (`215.9 × 279.4 mm` / `8.5 × 11.0 in`), unless the specific fixture or test is explicitly testing A4 (`210.0 × 297.0 mm`) or other custom dimensions.
     4. Reference and link the issue in commits: `feat(<scope>): <description> (fixes #<num>)` or `fix(<scope>): <description> (fixes #<num>)`.
     5. Link the issue upon push and Pull Request (PR):
