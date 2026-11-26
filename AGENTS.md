@@ -168,6 +168,7 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
          gh pr create --repo amhbamhb/StampAlbumGen2 --head feature/issue-<num>-<short-name> --title "<title>" --body "Closes #<num>\n\n<details>"
          ```
        - Ensure the issue number is explicitly linked in the PR body (`Closes #<num>` or `Fixes #<num>`) so that the complete issue lifecycle (creation -> branch -> implementation -> commit -> push -> PR) is fully connected and automatically closes the issue upon merge.
+       - **User-Facing First PR Description Format (MANDATORY)**: Write PR descriptions starting with clear, general, and accessible language explaining what has changed and why it helps stamp collectors. The in-application update notification system reads and presents this summary directly to users. Place technical implementation details, internal architecture notes, parameter mappings, and command grammar in a collapsible or dedicated **Technical Details** section at the bottom.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.
 
