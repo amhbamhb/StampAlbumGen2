@@ -1,0 +1,70 @@
+# Comprehensive All-In-One Showcase: Page Margins & Clearances (Raw Mode, 4 Variations)
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)
+ALBUM_PAGES_MARGINSE (12.0 25.0 22.0 16.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (1.0 0.0 0.0 0.0)
+COLOR_ALBUM_BORDER ("#1E4A7A")
+ALBUM_PAGES_TITLE (TB 13 "PAGE MARGINS SHOWCASE" 3)
+COLOR_STAMP_BORDER ("#2B5B84")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+# --- PAGE 1: SYMMETRIC MARGINS ---
+PAGE_START
+PAGE_TEXT_CENTRE (TB 13 "PAGE MARGINS - PAGE 1: SYMMETRIC" 2)
+PAGE_TEXT_CENTRE (HN 8 "Balanced 15mm margins on all four edges for single-sheet displays" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 1: Symmetric)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 1: Symmetric)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 1: Symmetric)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 1: Symmetric)")
+
+# --- PAGE 2: ASYMMETRIC MARGINS ---
+PAGE_START
+COLOR_ALBUM_BORDER ("forestgreen")
+PAGE_TEXT_CENTRE (TB 13 "PAGE MARGINS - PAGE 2: ASYMMETRIC" 2)
+PAGE_TEXT_CENTRE (HN 8 "25mm left binding clearance for three-ring binder hole punches" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 2: Asymmetric)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 2: Asymmetric)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 2: Asymmetric)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 2: Asymmetric)")
+
+# --- PAGE 3: FRACTIONAL MARGINS ---
+PAGE_START
+COLOR_ALBUM_BORDER ("darkred")
+PAGE_TEXT_CENTRE (TB 13 "PAGE MARGINS - PAGE 3: FRACTIONAL" 2)
+PAGE_TEXT_CENTRE (HN 8 "Sub-millimeter precision margins (12.25 17.75 20.25 23.75 mm)" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 3: Fractional)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 3: Fractional)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 3: Fractional)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 3: Fractional)")
+
+# --- PAGE 4: EVEN MARGIN OVERRIDE ---
+PAGE_START
+COLOR_ALBUM_BORDER ("purple")
+PAGE_TEXT_CENTRE (TB 13 "PAGE MARGINS - PAGE 4: EVEN MARGIN OVERRIDE" 2)
+PAGE_TEXT_CENTRE (HN 8 "Mirrored binding margins on even pages for bookbound facing layouts" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 4: Even Override)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 4: Even Override)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 4: Even Override)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 4: Even Override)")

@@ -1,53 +1,107 @@
-# Page Margins and Even-Page Margin Override (margins-v1)
+# Page Margins and Even-Page Margin Override (`margins-v1`)
 
-This fixture demonstrates and validates the AlbumEasy commands `ALBUM_PAGES_MARGINS` and `ALBUM_PAGES_MARGINSE`, defining page margins and independent margin overrides for even-numbered pages (facing-page / book-binding layouts).
+This fixture family tests and showcases page margins (`ALBUM_PAGES_MARGINS` / `NATIVE_PAGES_MARGINS`) and even-page margin overrides (`ALBUM_PAGES_MARGINSE` / `NATIVE_PAGES_MARGINSE`) in StampAlbumGen2 across both the native PDF engine and raw AlbumEasy format.
 
-## Fixture Overview
+---
 
-| Input | Reference PDF (AlbumEasy 4.5.0) | Pass 2 Native Album | Native Direct TXT/Raw | Description |
-|---|---|---|---|---|
-| [symmetric.txt](symmetric.txt) | [symmetric.reference.pdf](symmetric.reference.pdf) | [symmetric.stampalbum](symmetric.stampalbum) | [symmetric-raw.stampalbum](symmetric-raw.stampalbum) | Symmetric 15mm margins on all edges |
-| [asymmetric.txt](asymmetric.txt) | [asymmetric.reference.pdf](asymmetric.reference.pdf) | [asymmetric.stampalbum](asymmetric.stampalbum) | [asymmetric-raw.stampalbum](asymmetric-raw.stampalbum) | Asymmetric margins (25mm left binding clearance) |
-| [fractional.txt](fractional.txt) | [fractional.reference.pdf](fractional.reference.pdf) | [fractional.stampalbum](fractional.stampalbum) | [fractional-raw.stampalbum](fractional-raw.stampalbum) | Fractional millimeter margins (12.25 17.75 20.25 23.75) |
-| [even-override.txt](even-override.txt) | [even-override.reference.pdf](even-override.reference.pdf) | [even-override.stampalbum](even-override.stampalbum) | [even-override-raw.stampalbum](even-override-raw.stampalbum) | 3-page document with alternating odd/even binding margins |
+## 1. Stamp Collector Guide (User-Friendly Overview)
 
-### Tested Commands
+### Why Page Margins Matter in Stamp Albums
 
-- `ALBUM_PAGES_MARGINS (left right top bottom)`: Sets default margins for all pages (or odd pages when even override is configured).
-- `ALBUM_PAGES_MARGINSE (left right top bottom)`: Overrides margins on even-numbered physical pages (2, 4, 6...).
+When mounting stamps and creating custom stamp album pages, proper margins ensure that:
 
-Both commands require four positive numeric arguments (in millimeters) and must precede `PAGE_START`. Command keywords are case-insensitive.
+- **Binding clearance**: Ring binders, spring-back binders, and screw-post binders require extra margin on the binding side (typically 20mm to 30mm) so page contents and stamps don't get hidden under the binder rings or spine.
+- **Visual balance & aesthetics**: Even spacing around album borders gives pages a clean, professional exhibition appearance.
+- **Handling safety**: Sufficient outer margins keep stamp mounts and archival plastic away from fingers turning the pages.
 
-## Reference Provenance (AlbumEasy 4.5.0)
+### Book-Binding & Facing Pages (`ALBUM_PAGES_MARGINSE`)
 
-| Input File | Input SHA-256 | Reference PDF | Reference SHA-256 |
-|---|---|---|---|
-| `symmetric.txt` | `eeb1aeabed1b81e1d72d1dcb50a31156fcf68beedb7217d62cda838f11fdb5dd` | `symmetric.reference.pdf` | `783fe6d20f61571e82b8204b829d3cb1658c4ca5d4de594c99c8900d1f8a640c` |
-| `asymmetric.txt` | `e18251b812d03e7fab60c2fa5e1c0c6a5d86075393d26fffcf306a9aca7dc6d2` | `asymmetric.reference.pdf` | `5eeba9a90f39242116b6f20dde69ef3c2be886ecb6f41f8f5fced76ecc1f8f49` |
-| `fractional.txt` | `f10fc639a5c713338f1e55d1fb6afd216950d981293f72f32e52cd0b1451ef75` | `fractional.reference.pdf` | `6f467111bf4faeea602ca3f91111c20bb7bd3f0821e5ce2e25998bd25232932c` |
-| `even-override.txt` | `24186d5df249e3a7de42f3c4fefdf276458bbbc174277c07c534542d0c061314` | `even-override.reference.pdf` | `fd3e97d5614452bdc58f4e6a42cfaf5564c8ab0960e92860f33b7cc540d93af6` |
+When printing double-sided pages or assembling facing-page albums:
 
-Negative diagnostic inputs:
-- `missing-margins.txt`: `8c2f53bf3b210a25cea7d1421663742ed8affa9a270a22bdb6aca85efe008b49`
-- `missing-bottom.txt`: `70c804120fce71fdd0fc6bd58a113fb32bf683f9824a7ab2b991cb49241a96bc`
+- **Odd pages (Right-hand / Recto)**: Require extra margin on the **left** edge (binding side).
+- **Even pages (Left-hand / Verso)**: Require extra margin on the **right** edge (binding side).
 
-## Pass 2 Compatibility Files
+With `ALBUM_PAGES_MARGINSE`, you can define odd and even page margins independently:
 
-1. **`*.stampalbum`**: Native `STAMPALBUM 1` documents verifying that the native vector engine parses and applies symmetric, asymmetric, fractional, and alternating even margins (`ALBUM_PAGES_MARGINSE`).
-2. **`*-raw.stampalbum`**: Raw AlbumEasy commands files testing direct native loader compatibility across all margin variants.
+```text
+ALBUM_PAGES_MARGINS (25.0 15.0 15.0 15.0)   # Odd pages: 25mm left binding margin
+ALBUM_PAGES_MARGINSE (15.0 25.0 15.0 15.0)  # Even pages: 25mm right binding margin
+```
 
-## Automated Verification
+The renderer automatically alternates margins across page breaks, providing seamless book-binding layouts.
 
-Run the dedicated margin and even-margin regression suites:
+---
+
+## 2. Technical Reference & Command Grammar
+
+### Grammar & Argument Variations
+
+```text
+ALBUM_PAGES_MARGINS ( left right top bottom )
+NATIVE_PAGES_MARGINS ( left right top bottom )
+NATIVE_PAGE_MARGINS ( left right top bottom )
+
+ALBUM_PAGES_MARGINSE ( left right top bottom )
+NATIVE_PAGES_MARGINSE ( left right top bottom )
+NATIVE_PAGE_MARGINSE ( left right top bottom )
+```
+
+| Parameter | Type       | Description                                                                                |
+| :-------- | :--------- | :----------------------------------------------------------------------------------------- |
+| `left`    | Float (mm) | Margin distance from physical left edge of page to content/border boundary. Must be > 0.   |
+| `right`   | Float (mm) | Margin distance from physical right edge of page to content/border boundary. Must be > 0.  |
+| `top`     | Float (mm) | Margin distance from physical top edge of page to content/border boundary. Must be > 0.    |
+| `bottom`  | Float (mm) | Margin distance from physical bottom edge of page to content/border boundary. Must be > 0. |
+
+### Geometry & Content Area Calculation
+
+Given physical page dimensions `(page_width, page_height)`:
+
+- Content area left: `left`
+- Content area right: `page_width - right`
+- Content area bottom: `bottom`
+- Content area top: `page_height - top`
+- Printable width: `page_width - left - right`
+- Printable height: `page_height - top - bottom`
+
+Album borders, page titles, stamp grids, and annotations are formatted within this active content rectangle.
+
+### Page Alternation Rules
+
+- When only `ALBUM_PAGES_MARGINS` is set, its values apply to **all pages**.
+- When `ALBUM_PAGES_MARGINSE` is also set:
+  - **Odd physical pages** (1, 3, 5, 7...): Use `ALBUM_PAGES_MARGINS`.
+  - **Even physical pages** (2, 4, 6, 8...): Use `ALBUM_PAGES_MARGINSE`.
+
+---
+
+## 3. Fixture Variations Inventory
+
+| Variation            | Command Signature                                                                           | Key Feature Demonstrated                                            |
+| :------------------- | :------------------------------------------------------------------------------------------ | :------------------------------------------------------------------ |
+| `symmetric`          | `ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)`                                                 | Symmetric 15mm margins on all edges with Navy `#1E4A7A` border      |
+| `asymmetric`         | `ALBUM_PAGES_MARGINS (25.0 15.0 15.0 15.0)`                                                 | 25mm left binding clearance with ForestGreen border                 |
+| `fractional`         | `ALBUM_PAGES_MARGINS (12.25 17.75 20.25 23.75)`                                             | Precise fractional millimeter margins with DarkRed border           |
+| `even-override`      | `ALBUM_PAGES_MARGINS (25.0 15.0 15.0 15.0)`<br>`ALBUM_PAGES_MARGINSE (15.0 25.0 15.0 15.0)` | Alternating odd/even facing-page binding margins with Purple border |
+| `all-in-one-compare` | Multi-page (4 pages)                                                                        | All 4 variations combined sequentially in a single document         |
+
+### Reference & Output Artifacts
+
+| Fixture              | Native Album                                                   | Native Direct Raw                                                      | Reference PDF (AlbumEasy 4.5.0)                            | Native PDF                                                     | Native Raw PDF                                                         |
+| :------------------- | :------------------------------------------------------------- | :--------------------------------------------------------------------- | :--------------------------------------------------------- | :------------------------------------------------------------- | :--------------------------------------------------------------------- |
+| `symmetric`          | [symmetric.stampalbum](symmetric.stampalbum)                   | [symmetric-raw.stampalbum](symmetric-raw.stampalbum)                   | [symmetric.reference.pdf](symmetric.reference.pdf)         | [symmetric-native.pdf](symmetric-native.pdf)                   | [symmetric-raw-native.pdf](symmetric-raw-native.pdf)                   |
+| `asymmetric`         | [asymmetric.stampalbum](asymmetric.stampalbum)                 | [asymmetric-raw.stampalbum](asymmetric-raw.stampalbum)                 | [asymmetric.reference.pdf](asymmetric.reference.pdf)       | [asymmetric-native.pdf](asymmetric-native.pdf)                 | [asymmetric-raw-native.pdf](asymmetric-raw-native.pdf)                 |
+| `fractional`         | [fractional.stampalbum](fractional.stampalbum)                 | [fractional-raw.stampalbum](fractional-raw.stampalbum)                 | [fractional.reference.pdf](fractional.reference.pdf)       | [fractional-native.pdf](fractional-native.pdf)                 | [fractional-raw-native.pdf](fractional-raw-native.pdf)                 |
+| `even-override`      | [even-override.stampalbum](even-override.stampalbum)           | [even-override-raw.stampalbum](even-override-raw.stampalbum)           | [even-override.reference.pdf](even-override.reference.pdf) | [even-override-native.pdf](even-override-native.pdf)           | [even-override-raw-native.pdf](even-override-raw-native.pdf)           |
+| `all-in-one-compare` | [all-in-one-compare.stampalbum](all-in-one-compare.stampalbum) | [all-in-one-compare-raw.stampalbum](all-in-one-compare-raw.stampalbum) | _N/A (Multi-variation showcase)_                           | [all-in-one-compare-native.pdf](all-in-one-compare-native.pdf) | [all-in-one-compare-raw-native.pdf](all-in-one-compare-raw-native.pdf) |
+
+---
+
+## 4. Automated Verification
+
+Run the dedicated margins regression tests:
 
 ```sh
 cargo test --test native_pdf_marginse
 cargo test --test native_pdf_page_settings
 ```
-
-This verifies:
-1. `even-override.txt` renders 3 pages natively with alternating odd/even content and margin bounds.
-2. `even-override-raw.stampalbum` produces identical page streams to the TXT render.
-3. Native `STAMPALBUM 1` documents parse `ALBUM_PAGES_MARGINSE` and apply alternating layouts across page breaks.
-4. Case-insensitivity (`ALBUM_PAGES_MARGINSE`, `Album_Pages_Marginse`, `album_pages_marginse`).
-5. Strict validation on argument counts, non-numeric values, negative values, post-`PAGE_START` placement, and native duplicates.

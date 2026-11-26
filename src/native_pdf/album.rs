@@ -172,7 +172,7 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
-                "ALBUM_PAGES_MARGINS" => {
+                "ALBUM_PAGES_MARGINS" | "NATIVE_PAGES_MARGINS" | "NATIVE_PAGE_MARGINS" => {
                     set_once(
                         &mut margins,
                         Margins::parse(&numbers(&name, &args, 4).map_err(&fail)?).map_err(&fail)?,
@@ -180,7 +180,7 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
-                "ALBUM_PAGES_MARGINSE" => {
+                "ALBUM_PAGES_MARGINSE" | "NATIVE_PAGES_MARGINSE" | "NATIVE_PAGE_MARGINSE" => {
                     set_once(
                         &mut even_margins,
                         EvenMargins::parse(&numbers(&name, &args, 4).map_err(&fail)?)
