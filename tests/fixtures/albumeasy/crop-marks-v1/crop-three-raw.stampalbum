@@ -1,0 +1,23 @@
+# Printer Crop Marks - Three Arguments (Raw Mode)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+ALBUM_PAGES_CROP_MARKS (0.2 7.0 8.0 "darkorange")
+ALBUM_PAGES_TITLE (TB 13 "PRINTER CROP MARKS (WIDTH 0.2MM, 7MM, 8MM)" 3)
+COLOR_STAMP_BORDER ("darkorange")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (TB 11 "VARIATION: THREE ARGUMENTS (0.2MM, 7.0MM, 8.0MM)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Width 0.2mm, h-pad 7.0mm, v-pad 8.0mm in darkorange; arm length defaults to 5.0mm" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden")

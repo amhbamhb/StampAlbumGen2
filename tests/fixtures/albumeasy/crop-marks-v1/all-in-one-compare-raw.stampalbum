@@ -1,0 +1,144 @@
+# Comprehensive All-In-One Showcase: Printer Crop Marks (Raw Mode, 9 Variations Across 9 Pages)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+ALBUM_PAGES_TITLE (TB 13 "PRINTER CROP MARKS SHOWCASE" 3)
+COLOR_STAMP_BORDER ("#2B5B84")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+# --- PAGE 1: DEFAULT CROP MARKS ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS ()
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 1: DEFAULT (0.1MM, 1MM PAD, 5MM ARMS)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Default 0.1mm line width, 1.0mm padding, 5.0mm arms in standard black" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 1: Default)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 1: Default)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 1: Default)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 1: Default)")
+
+# --- PAGE 2: CUSTOM DIMENSIONS ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0.25 2.0 4.0 5.0)
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 2: CUSTOM DIMENSIONS (0.25MM, 2MM, 4MM, 5MM)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Custom 0.25mm line width, 2.0mm h-pad, 4.0mm v-pad, 5.0mm arms in black" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 2: Custom)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 2: Custom)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 2: Custom)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 2: Custom)")
+
+# --- PAGE 3: CUSTOM COLOR (#1E4A7A NAVY) ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0.25 8.0 9.0 3.0 "#1E4A7A")
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 3: NAVY COLOR (#1E4A7A)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Custom 0.25mm width, 8.0mm h-pad, 9.0mm v-pad, 3.0mm arms in archival navy (#1E4A7A)" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 3: Navy)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 3: Navy)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 3: Navy)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 3: Navy)")
+
+# --- PAGE 4: DISABLED CROP MARKS ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (none)
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 4: DISABLED (NONE)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Crop marks explicitly disabled with (none); clean unadorned page boundaries" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 4: Disabled)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 4: Disabled)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 4: Disabled)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 4: Disabled)")
+
+# --- PAGE 5: FOREST GREEN COLOR ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0.3 6.0 6.0 4.0 "forestgreen")
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 5: FOREST GREEN COLOR" 2)
+PAGE_TEXT_CENTRE (HN 8 "Forestgreen crop marks (0.3mm width, 6.0mm pad, 4.0mm arms) for vibrant visibility" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 5: Forest Green)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 5: Forest Green)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 5: Forest Green)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 5: Forest Green)")
+
+# --- PAGE 6: SINGLE PARAMETER (0.4MM - DARK RED) ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0.4 "darkred")
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 6: SINGLE PARAMETER (0.4MM - DARK RED)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Single parameter: 0.4mm heavy stroke in darkred; padding and arms default" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 6: Dark Red)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 6: Dark Red)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 6: Dark Red)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 6: Dark Red)")
+
+# --- PAGE 7: TWO PARAMETERS (0.2MM, 7.0MM - PURPLE) ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0.2 7.0 "purple")
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 7: TWO PARAMETERS (0.2MM, 7MM - PURPLE)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Two parameters: 0.2mm width, 7.0mm h-pad in purple; vertical pad and arms default" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 7: Purple)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 7: Purple)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 7: Purple)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 7: Purple)")
+
+# --- PAGE 8: THREE PARAMETERS (0.2MM, 7.0MM, 8.0MM - DARK ORANGE) ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0.2 7.0 8.0 "darkorange")
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 8: THREE PARAMETERS (DARK ORANGE)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Three parameters: 0.2mm width, 7.0mm h-pad, 8.0mm v-pad in darkorange; arms default" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 8: Dark Orange)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 8: Dark Orange)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 8: Dark Orange)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 8: Dark Orange)")
+
+# --- PAGE 9: ZERO DIMENSIONS (0 0 0 0) ---
+PAGE_START
+ALBUM_PAGES_CROP_MARKS (0 0 0 0)
+PAGE_TEXT_CENTRE (TB 13 "CROP MARKS - PAGE 9: ZERO DIMENSIONS (0 0 0 0)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Zero dimensions: 0mm width, 0mm padding, 0mm arms non-rendering hairline baseline" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (Page 9: Zero)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (Page 9: Zero)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (Page 9: Zero)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (Page 9: Zero)")

@@ -310,6 +310,9 @@ pub(crate) fn paginate_native_with_page_breaks(
         for section in sections {
             while let Some(entry) = breaks.next_if(|entry| entry.item_index == start) {
                 active_settings.set_page_spacing(entry.spacing);
+                if let Some(ref crop_marks_opt) = entry.crop_marks {
+                    active_settings.set_crop_marks_opt(*crop_marks_opt);
+                }
                 if let Some(ref border_opt) = entry.decorative_border {
                     active_settings.set_decorative_border_opt(border_opt.clone());
                 }
@@ -559,6 +562,18 @@ pub(crate) fn paginate_native_with_page_breaks(
         }
         while let Some(entry) = breaks.next_if(|entry| entry.item_index == items.len()) {
             active_settings.set_page_spacing(entry.spacing);
+            if let Some(ref crop_marks_opt) = entry.crop_marks {
+                active_settings.set_crop_marks_opt(*crop_marks_opt);
+            }
+            if let Some(ref border_opt) = entry.decorative_border {
+                active_settings.set_decorative_border_opt(border_opt.clone());
+            }
+            if let Some(border) = entry.border {
+                active_settings.set_border(border);
+            }
+            if let Some(colour) = entry.border_colour {
+                active_settings.set_border_colour(colour);
+            }
             super::pagination::advance_page(&active_settings, &mut pages, &mut page, total, date)?;
         }
         if !page.items.is_empty() || !page_breaks.is_empty() {

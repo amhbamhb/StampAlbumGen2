@@ -4,6 +4,7 @@ use super::{
     Result,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::album_pages_border::PageBorder,
+    commands::page::album_pages_crop_marks::AlbumPagesCropMarks,
     commands::page::album_pages_decorative_border::AlbumPagesDecorativeBorder,
     commands::page::album_pages_spacing::Spacing,
     document::{Bounds, PageLayout, PageSettings},
@@ -44,6 +45,7 @@ pub struct StampRowSection {
 pub(crate) struct NativePageBreak {
     pub item_index: usize,
     pub spacing: Option<Spacing>,
+    pub crop_marks: Option<Option<AlbumPagesCropMarks>>,
     pub decorative_border: Option<Option<AlbumPagesDecorativeBorder>>,
     pub border: Option<PageBorder>,
     pub border_colour: Option<AlbumBorderColour>,
@@ -209,6 +211,9 @@ fn paginate_pass(
     loop {
         while let Some(entry) = breaks.next_if(|entry| entry.item_index == index) {
             active_settings.set_page_spacing(entry.spacing);
+            if let Some(ref crop_marks_opt) = entry.crop_marks {
+                active_settings.set_crop_marks_opt(*crop_marks_opt);
+            }
             if let Some(ref border_opt) = entry.decorative_border {
                 active_settings.set_decorative_border_opt(border_opt.clone());
             }

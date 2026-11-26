@@ -1,5 +1,7 @@
 use sha2::{Digest, Sha256};
 use stamp_album_gen2::native_pdf::{
+    album::NativeAlbum,
+    albumeasy,
     colour::NamedColour,
     commands::page::{album_pages_crop_marks::AlbumPagesCropMarks, album_pages_size::PageSize},
     config::NativePdfConfig,
@@ -606,5 +608,69 @@ fn rendered_native_colour_is_independent_of_album_border() -> Result<()> {
             }
         }
     }
+    Ok(())
+}
+
+#[test]
+fn render_all_crop_marks_fixtures_and_generate_native_pdfs() -> Result<()> {
+    let dir = root();
+
+    let variations = [
+        "crop-default",
+        "crop-custom",
+        "crop-colour",
+        "crop-disabled",
+        "crop-landscape",
+        "crop-one",
+        "crop-two",
+        "crop-three",
+        "crop-zero",
+    ];
+
+    for var in variations {
+        // 1. Render native format (*.stampalbum -> *-native.pdf)
+        let native_source_path = dir.join(format!("{var}.stampalbum"));
+        let native_pdf_path = dir.join(format!("{var}-native.pdf"));
+        let native_source = fs::read_to_string(&native_source_path)?;
+        let native_album = NativeAlbum::parse(&native_source, &dir)?;
+        let pages = native_album.write_pdf(&native_pdf_path)?;
+        assert_eq!(pages.len(), 1, "Variation {var} should render 1 page");
+        assert!(native_pdf_path.exists());
+        assert!(fs::metadata(&native_pdf_path)?.len() > 1000);
+
+        // 2. Render raw format (*-raw.stampalbum -> *-raw-native.pdf)
+        let raw_source_path = dir.join(format!("{var}-raw.stampalbum"));
+        let raw_pdf_path = dir.join(format!("{var}-raw-native.pdf"));
+        let raw_pages = albumeasy::render_file(&raw_source_path, &raw_pdf_path)?;
+        assert_eq!(raw_pages, 1, "Raw variation {var} should render 1 page");
+        assert!(raw_pdf_path.exists());
+        assert!(fs::metadata(&raw_pdf_path)?.len() > 1000);
+    }
+
+    // 3. Render comprehensive 9-page all-in-one suite
+    let all_in_one_path = dir.join("all-in-one-compare.stampalbum");
+    let all_in_one_pdf = dir.join("all-in-one-compare-native.pdf");
+    let all_in_one_source = fs::read_to_string(&all_in_one_path)?;
+    let all_in_one_album = NativeAlbum::parse(&all_in_one_source, &dir)?;
+    let aio_pages = all_in_one_album.write_pdf(&all_in_one_pdf)?;
+    assert_eq!(
+        aio_pages.len(),
+        9,
+        "all-in-one-compare must contain exactly 9 pages"
+    );
+    assert!(all_in_one_pdf.exists());
+    assert!(fs::metadata(&all_in_one_pdf)?.len() > 1000);
+
+    // 4. Render raw 9-page all-in-one suite
+    let raw_aio_path = dir.join("all-in-one-compare-raw.stampalbum");
+    let raw_aio_pdf = dir.join("all-in-one-compare-raw-native.pdf");
+    let raw_aio_pages = albumeasy::render_file(&raw_aio_path, &raw_aio_pdf)?;
+    assert_eq!(
+        raw_aio_pages, 9,
+        "all-in-one-compare-raw must contain exactly 9 pages"
+    );
+    assert!(raw_aio_pdf.exists());
+    assert!(fs::metadata(&raw_aio_pdf)?.len() > 1000);
+
     Ok(())
 }

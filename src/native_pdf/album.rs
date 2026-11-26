@@ -99,6 +99,9 @@ impl NativeAlbum {
         let mut spacing = None;
         let mut border = None;
         let mut border_colour = None;
+        let mut crop_marks: Option<
+            Option<super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks>,
+        > = None;
         let mut decorative_border_file = None;
         let mut decorative_border_colour = None;
         let mut page_title = None;
@@ -257,6 +260,19 @@ impl NativeAlbum {
                         return Err(fail(format!("Duplicate {name} command")));
                     } else {
                         decorative_border_file = Some(filename);
+                    }
+                }
+                "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {
+                    use super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks;
+                    let arg_strs: Vec<&str> = args.iter().map(|a| a.value.as_str()).collect();
+                    let parsed =
+                        AlbumPagesCropMarks::parse_command_args(&arg_strs).map_err(&fail)?;
+                    if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
+                        pb.crop_marks = Some(parsed);
+                    } else if crop_marks.is_some() {
+                        return Err(fail(format!("Duplicate {name} command")));
+                    } else {
+                        crop_marks = Some(parsed);
                     }
                 }
                 "COLOUR_ALBUM_DECORATIVE_BORDER" | "COLOR_ALBUM_DECORATIVE_BORDER" => {
@@ -786,6 +802,7 @@ impl NativeAlbum {
                     page_breaks.push(NativePageBreak {
                         item_index: image_specs.len(),
                         spacing,
+                        crop_marks: None,
                         decorative_border: None,
                         border: None,
                         border_colour: None,
@@ -1168,6 +1185,9 @@ impl NativeAlbum {
         let mut page_settings =
             PageSettings::new(page_size, margins, spacing, border, border_colour);
         page_settings.set_row_alignment(alignment);
+        if let Some(marks) = crop_marks.flatten() {
+            page_settings.set_crop_marks(marks);
+        }
         if let Some(filename) = decorative_border_file {
             use super::commands::page::album_pages_decorative_border::{
                 AlbumPagesDecorativeBorder, DecorativeBorderPolicy, resolve_definition_path,

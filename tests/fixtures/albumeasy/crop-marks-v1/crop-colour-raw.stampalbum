@@ -1,0 +1,23 @@
+# Printer Crop Marks - Custom Color (#1E4A7A Navy) - Raw Mode
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+ALBUM_PAGES_CROP_MARKS (0.25 8.0 9.0 3.0 "#1E4A7A")
+ALBUM_PAGES_TITLE (TB 15 "PRINTER CROP MARKS (NAVY COLOR)" 3)
+COLOR_STAMP_BORDER ("#1E4A7A")
+COLOR_STAMP_TEXT ("#1A2530")
+STAMP_BOXES_SIZE_ADJUST (2.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (TB 11 "VARIATION: CUSTOM COLOR CROP MARKS (#1E4A7A NAVY)" 2)
+PAGE_TEXT_CENTRE (HN 8 "Custom 0.25mm line width, 8mm h-pad, 9mm v-pad, 3mm arms in archival navy (#1E4A7A)" 4)
+PAGE_VSPACE (4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (35.0 26.0 "../spacing-v1/images/san-marino.jpg" "" "" "San Marino (#1E4A7A)")
+STAMP_ADD_IMG (36.0 22.0 "../spacing-v1/images/new-zealand.jpg" "" "" "New Zealand (#1E4A7A)")
+PAGE_VSPACE (8.0)
+ROW_START_FS (HN 8 0.25 4.0)
+STAMP_ADD_IMG (22.0 34.0 "../spacing-v1/images/malta.jpg" "" "" "Malta (#1E4A7A)")
+STAMP_ADD_IMG (23.0 27.0 "../spacing-v1/images/sweden.jpg" "" "" "Sweden (#1E4A7A)")

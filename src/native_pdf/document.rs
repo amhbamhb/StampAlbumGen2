@@ -167,6 +167,18 @@ impl PageSettings {
         self.crop_marks = Some(marks);
     }
 
+    pub fn set_crop_marks_opt(&mut self, marks: Option<AlbumPagesCropMarks>) {
+        self.crop_marks = marks;
+    }
+
+    pub fn crop_marks(&self) -> Option<AlbumPagesCropMarks> {
+        self.crop_marks
+    }
+
+    pub fn size(&self) -> PageSize {
+        self.size
+    }
+
     pub fn set_decorative_border(&mut self, border: AlbumPagesDecorativeBorder) {
         self.decorative_border = Some(border);
     }

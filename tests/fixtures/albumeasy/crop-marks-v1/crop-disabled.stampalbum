@@ -1,0 +1,18 @@
+STAMPALBUM 1
+# Printer Crop Marks - Disabled
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+COLOR_ALBUM_BORDER (black)
+ALBUM_PAGES_CROP_MARKS (none)
+NATIVE_PAGE_TITLE (TB 15 "PRINTER CROP MARKS (DISABLED)" 8)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 #2B5B84 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino - Clean Page Periphery with Crop Marks Explicitly Disabled")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - No Corner Crosses or Cut Lines")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta - Uncluttered Layout Suitable for Pre-Cut Album Paper")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - Direct Print to Final Physical Page Dimensions")

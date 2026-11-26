@@ -1,0 +1,98 @@
+STAMPALBUM 1
+# Comprehensive All-In-One Showcase: Printer Crop Marks (All 9 Variations Across 9 Pages)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+COLOR_ALBUM_BORDER (black)
+NATIVE_PAGE_TITLE (TB 13 "PRINTER CROP MARKS SHOWCASE" 8)
+NATIVE_PAGE_CROP_MARKS ()
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 #2B5B84 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+# PAGE 1
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 1: DEFAULT CROP MARKS\nLine Width 0.1mm, Pad 1.0mm, Arms 5.0mm\nStandard Black Crosshair Inset")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 1: DEFAULT CROP MARKS\nStandard Four-Corner Black Hairline Marks\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 1: DEFAULT CROP MARKS\nDefault Dimensions Match AlbumEasy Spec\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 1: DEFAULT CROP MARKS\nMediaBox Aligned with 0.5 Width Inset\nSweden Specimen")
+
+# PAGE 2
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_CROP_MARKS (0.25 2.0 4.0 5.0)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 2: CUSTOM DIMENSIONS\n0.25mm Width, 2mm H-Pad, 4mm V-Pad\nAsymmetrical Vertical Offset")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 2: CUSTOM DIMENSIONS\n5.0mm Arm Length on Heavy Card Stock\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 2: CUSTOM DIMENSIONS\nClear Visual Separation from Margins\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 2: CUSTOM DIMENSIONS\nGuillotine Trimming Precision Crosses\nSweden Specimen")
+
+# PAGE 3
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER (#1E4A7A)
+NATIVE_PAGE_CROP_MARKS (0.25 8.0 9.0 3.0 #1E4A7A)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 3: ARCHIVAL NAVY (#1E4A7A)\n0.25mm Width, 8mm H-Pad, 9mm V-Pad\nCustom 3mm Arm Length in Navy")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 3: ARCHIVAL NAVY (#1E4A7A)\nHigh-Visibility Colored Corner Crosses\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 3: ARCHIVAL NAVY (#1E4A7A)\nHex Color Notation Fully Supported\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 3: ARCHIVAL NAVY (#1E4A7A)\nColor-Coordinated Album Border\nSweden Specimen")
+
+# PAGE 4
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER (black)
+NATIVE_PAGE_CROP_MARKS (none)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 4: CROP MARKS DISABLED\nExplicitly Turned Off with (none)\nClean Page Periphery")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 4: CROP MARKS DISABLED\nZero Corner Crosshair Strokes\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 4: CROP MARKS DISABLED\nSeamless Turn-Off from Previous Page\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 4: CROP MARKS DISABLED\nSuitable for Pre-Cut Paper\nSweden Specimen")
+
+# PAGE 5
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("forestgreen")
+NATIVE_PAGE_CROP_MARKS (0.3 6.0 6.0 4.0 "forestgreen")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 5: FOREST GREEN COLOR\n0.3mm Width, 6mm Pad, 4mm Arms\nSVG Named Color Support")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 5: FOREST GREEN COLOR\nVibrant Tone on Archival Stock\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 5: FOREST GREEN COLOR\nCoordinated Green Border Frame\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 5: FOREST GREEN COLOR\nClean Four-Corner Inset Guide\nSweden Specimen")
+
+# PAGE 6
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("darkred")
+NATIVE_PAGE_CROP_MARKS (0.4 "darkred")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 6: SINGLE PARAMETER (0.4MM)\nHeavy 0.4mm Stroke in Dark Red\nPadding and Arms Default Automatically")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 6: SINGLE PARAMETER (0.4MM)\nDefault 1.0mm Pad and 5.0mm Arms\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 6: SINGLE PARAMETER (0.4MM)\nProminent Bold Cut Indicators\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 6: SINGLE PARAMETER (0.4MM)\nConcise Single-Value Grammar\nSweden Specimen")
+
+# PAGE 7
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("purple")
+NATIVE_PAGE_CROP_MARKS (0.2 7.0 "purple")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 7: TWO PARAMETERS (0.2MM, 7MM)\nWidth 0.2mm, H-Pad 7.0mm in Purple\nDeep Left/Right Inset Distances")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 7: TWO PARAMETERS (0.2MM, 7MM)\nVertical Pad Defaults to 1.0mm\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 7: TWO PARAMETERS (0.2MM, 7MM)\nArms Default to 5.0mm Gracefully\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 7: TWO PARAMETERS (0.2MM, 7MM)\nPartial Parameter Override with Color\nSweden Specimen")
+
+# PAGE 8
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("darkorange")
+NATIVE_PAGE_CROP_MARKS (0.2 7.0 8.0 "darkorange")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 8: THREE PARAMETERS\nWidth 0.2mm, H-Pad 7.0mm, V-Pad 8.0mm\nIndependent Dual-Axis Offsets in Dark Orange")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 8: THREE PARAMETERS\nArms Default to Standard 5.0mm\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 8: THREE PARAMETERS\nThree-Hole Punch Margin System Clearances\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 8: THREE PARAMETERS\nPrecision Layout Alignment Verification\nSweden Specimen")
+
+# PAGE 9
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER (black)
+NATIVE_PAGE_CROP_MARKS (0 0 0 0)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 9: ZERO DIMENSIONS (0 0 0 0)\n0mm Width, 0mm Padding, 0mm Arms\nZero-Length Butt-Capped Hairline Baseline")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 9: ZERO DIMENSIONS (0 0 0 0)\nNon-Rendering Verification Geometry\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 9: ZERO DIMENSIONS (0 0 0 0)\nComplete Non-Clipping Verification\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 9: ZERO DIMENSIONS (0 0 0 0)\nRobust Coordinate Boundary Handling\nSweden Specimen")

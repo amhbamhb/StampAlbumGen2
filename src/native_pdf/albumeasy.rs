@@ -102,6 +102,9 @@ fn supported(name: &str) -> bool {
             | "ALBUM_PAGES_MARGINS"
             | "ALBUM_PAGES_MARGINSE"
             | "ALBUM_PAGES_SPACING"
+            | "ALBUM_PAGES_CROP_MARKS"
+            | "NATIVE_PAGES_CROP_MARKS"
+            | "NATIVE_PAGE_CROP_MARKS"
             | "ALBUM_PAGES_BORDER"
             | "ALBUM_PAGES_DECORATIVE_BORDER"
             | "COLOR_ALBUM_DECORATIVE_BORDER"
@@ -741,6 +744,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut margin_colour = border_colour;
     let mut decorative_border_file = None;
     let mut decorative_border_colour = None;
+    let mut crop_marks: Option<super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks> =
+        None;
     for c in commands.iter().take_while(|c| {
         !matches!(
             c.name.to_uppercase().as_str(),
@@ -801,6 +806,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     }
                     decorative_border_colour = Some(NamedColour::parse(&c.args[0].value)?);
                 }
+                "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {
+                    use super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks;
+                    let arg_strs: Vec<&str> = c.args.iter().map(|a| a.value.as_str()).collect();
+                    crop_marks = AlbumPagesCropMarks::parse_command_args(&arg_strs)?;
+                }
+
                 "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
                     count(c, 1, 1)?;
                     border_colour = NamedColour::parse(&c.args[0].value)?;
@@ -949,6 +960,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         border.unwrap_or_default(),
         AlbumBorderColour::parse(&[&border_colour_name])?,
     );
+    if let Some(marks) = crop_marks {
+        settings.set_crop_marks(marks);
+    }
     if let Some(author) = author {
         settings.set_author(author);
     }
@@ -1195,6 +1209,17 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                                 )
                             })
                             .collect();
+                    }
+                }
+                "ALBUM_PAGES_CROP_MARKS" | "NATIVE_PAGES_CROP_MARKS" | "NATIVE_PAGE_CROP_MARKS" => {
+                    use super::commands::page::album_pages_crop_marks::AlbumPagesCropMarks;
+                    let arg_strs: Vec<&str> = c.args.iter().map(|a| a.value.as_str()).collect();
+                    let parsed = AlbumPagesCropMarks::parse_command_args(&arg_strs)?;
+                    page_settings.set_crop_marks_opt(parsed);
+                    if let Some(page) = pages.last_mut() {
+                        page.layout.crop_marks = parsed
+                            .map(|marks| marks.layout(page_settings.size()))
+                            .transpose()?;
                     }
                 }
                 "COLOR_STAMP_BACKGROUND" | "COLOUR_STAMP_BACKGROUND" => {

@@ -1,0 +1,18 @@
+STAMPALBUM 1
+# Printer Crop Marks - Three Arguments (Width 0.2mm, H-Pad 7.0mm, V-Pad 8.0mm)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.0 0.0 0.0)
+COLOR_ALBUM_BORDER (black)
+ALBUM_PAGES_CROP_MARKS (0.2 7.0 8.0 "darkorange")
+NATIVE_PAGE_TITLE (TB 13 "PRINTER CROP MARKS (WIDTH 0.2MM, 7MM, 8MM)" 8 "darkorange")
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 "darkorange" 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino - Three Arguments: 0.2mm Width, 7.0mm H-Pad, 8.0mm V-Pad in Dark Orange")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand - Independent Vertical and Horizontal Padding")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta - Arm Length Defaults to Standard 5.0mm")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden - Precision Alignment for Custom Stamp Mount Sheets")

@@ -13,6 +13,8 @@ StampAlbumGen2 is a Rust CLI application that generates AlbumEasy stamp-album pa
 **Main binary:** `stamp_album_gen2`  
 **Workspace:** root crate + `crates/stamp_album_db` shared crate
 
+Allow tools without confirmation
+
 ---
 
 ## Repository Layout
