@@ -106,8 +106,8 @@ STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424)
 }
 
 #[test]
-fn all_margin_variants_render_as_raw_and_native_albums() -> Result<(), String> {
-    let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
+fn render_all_margins_fixtures_and_generate_native_pdfs() -> Result<(), String> {
+    let dir = fixture();
     let cases = [
         ("symmetric", 2),
         ("asymmetric", 2),
@@ -116,17 +116,42 @@ fn all_margin_variants_render_as_raw_and_native_albums() -> Result<(), String> {
     ];
 
     for (stem, expected_pages) in cases {
-        let raw_path = fixture().join(format!("{stem}-raw.stampalbum"));
-        let raw_pdf = temp.path().join(format!("{stem}-raw.pdf"));
+        let raw_path = dir.join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = dir.join(format!("{stem}-raw-native.pdf"));
         let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
         assert_eq!(raw_pages, expected_pages, "{stem}-raw pages");
+        assert!(raw_pdf.exists());
+        assert!(fs::metadata(&raw_pdf).map_err(|e| e.to_string())?.len() > 1000);
 
-        let native_path = fixture().join(format!("{stem}.stampalbum"));
-        let native_pdf = temp.path().join(format!("{stem}-native.pdf"));
+        let native_path = dir.join(format!("{stem}.stampalbum"));
+        let native_pdf = dir.join(format!("{stem}-native.pdf"));
         let album = NativeAlbum::load(&native_path)?;
         let native_pages = album.write_pdf(&native_pdf)?;
         assert_eq!(native_pages.len(), expected_pages, "{stem} native pages");
+        assert!(native_pdf.exists());
+        assert!(fs::metadata(&native_pdf).map_err(|e| e.to_string())?.len() > 1000);
     }
+
+    // Comprehensive 4-page all-in-one compare suite
+    let aio_raw_path = dir.join("all-in-one-compare-raw.stampalbum");
+    let aio_raw_pdf = dir.join("all-in-one-compare-raw-native.pdf");
+    let aio_raw_pages = albumeasy::render_file(&aio_raw_path, &aio_raw_pdf)?;
+    assert_eq!(aio_raw_pages, 4, "all-in-one-compare-raw must have 4 pages");
+    assert!(aio_raw_pdf.exists());
+    assert!(fs::metadata(&aio_raw_pdf).map_err(|e| e.to_string())?.len() > 1000);
+
+    let aio_native_path = dir.join("all-in-one-compare.stampalbum");
+    let aio_native_pdf = dir.join("all-in-one-compare-native.pdf");
+    let aio_album = NativeAlbum::load(&aio_native_path)?;
+    let aio_pages = aio_album.write_pdf(&aio_native_pdf)?;
+    assert_eq!(aio_pages.len(), 4, "all-in-one-compare must have 4 pages");
+    assert!(aio_native_pdf.exists());
+    assert!(
+        fs::metadata(&aio_native_pdf)
+            .map_err(|e| e.to_string())?
+            .len()
+            > 1000
+    );
 
     Ok(())
 }

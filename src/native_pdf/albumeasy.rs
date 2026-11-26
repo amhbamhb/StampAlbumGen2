@@ -100,7 +100,11 @@ fn supported(name: &str) -> bool {
             | "ALBUM_AUTHOR"
             | "ALBUM_TITLE"
             | "ALBUM_PAGES_MARGINS"
+            | "NATIVE_PAGES_MARGINS"
+            | "NATIVE_PAGE_MARGINS"
             | "ALBUM_PAGES_MARGINSE"
+            | "NATIVE_PAGES_MARGINSE"
+            | "NATIVE_PAGE_MARGINSE"
             | "ALBUM_PAGES_SPACING"
             | "ALBUM_PAGES_CROP_MARKS"
             | "NATIVE_PAGES_CROP_MARKS"
@@ -766,11 +770,11 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     count(c, 1, 1)?;
                     pdf_title = Some(text(c, 0)?.to_string());
                 }
-                "ALBUM_PAGES_MARGINS" => {
+                "ALBUM_PAGES_MARGINS" | "NATIVE_PAGES_MARGINS" | "NATIVE_PAGE_MARGINS" => {
                     count(c, 4, 4)?;
                     margins = Some(Margins::parse(&[n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?])?);
                 }
-                "ALBUM_PAGES_MARGINSE" => {
+                "ALBUM_PAGES_MARGINSE" | "NATIVE_PAGES_MARGINSE" | "NATIVE_PAGE_MARGINSE" => {
                     count(c, 4, 4)?;
                     even_margins = Some(EvenMargins::parse(&[
                         n(c, 0)?,

@@ -83,7 +83,7 @@ This chapter catalogs all 43 command families featured on the official website g
 #command_entry(
   "Page Margins & Clearances (margins-v1)",
   "Page Setup & Layout",
-  "ALBUM_PAGES_MARGINS (left right top bottom) / ALBUM_PAGES_MARGINSE (left right top bottom)",
+  "ALBUM_PAGES_MARGINS / NATIVE_PAGES_MARGINS (left right top bottom) / ALBUM_PAGES_MARGINSE / NATIVE_PAGES_MARGINSE (left right top bottom)",
   "Defines printable boundaries and independent alternating margins for odd and even pages in book-bound albums.",
   "ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)\nALBUM_PAGES_MARGINSE (12.0 25.0 18.0 21.0)",
   "ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)\nALBUM_PAGES_MARGINSE (12.0 25.0 18.0 21.0)",

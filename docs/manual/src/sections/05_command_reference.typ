@@ -49,7 +49,7 @@ When printed pages are bound in classic philatelic ring binders (such as 3-ring,
   ]
 )
 
-In native syntax, this alternating parity is declared in the document header:
+In native syntax, this alternating parity is declared in the document header (using `ALBUM_PAGES_MARGINS` or `NATIVE_PAGES_MARGINS`, and `ALBUM_PAGES_MARGINSE` or `NATIVE_PAGES_MARGINSE`):
 ```
 ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)
 ALBUM_PAGES_MARGINSE (12.0 25.0 18.0 21.0)

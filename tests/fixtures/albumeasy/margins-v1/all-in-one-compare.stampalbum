@@ -1,0 +1,54 @@
+STAMPALBUM 1
+# Comprehensive All-In-One Showcase: Page Margins & Clearances (All 4 Variations)
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)
+ALBUM_PAGES_MARGINSE (12.0 25.0 22.0 16.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (1.0 0.0 0.0 0.0)
+COLOR_ALBUM_BORDER (#1E4A7A)
+NATIVE_PAGE_TITLE (TB 14 "PAGE MARGINS - ALL-IN-ONE SHOWCASE" 8 #1E4A7A)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 #2B5B84 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+# ==============================================================================
+# PAGE 1: Symmetric Margins (15.0mm All Edges)
+# ==============================================================================
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 1: SYMMETRIC MARGINS\nBalanced 15mm Margins on All Four Edges\nSan Marino Specimen")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 1: SYMMETRIC MARGINS\nStandard Centered Layout for Single Sheets\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 1: SYMMETRIC MARGINS\nArchival Navy #1E4A7A Border Accent\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 1: SYMMETRIC MARGINS\nUniform Surrounding Whitespace\nSweden Specimen")
+
+# ==============================================================================
+# PAGE 2: Asymmetric Margins (25mm Left Binding Clearance) - Even Page
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("forestgreen")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 2: ASYMMETRIC MARGINS\nExtra Clearance for 3-Ring Binding Punch\nSan Marino Specimen")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 2: ASYMMETRIC MARGINS\nForest Green Archival Border Theme\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 2: ASYMMETRIC MARGINS\nProtects Artwork from Hole Punches\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 2: ASYMMETRIC MARGINS\nProfessional Presentation Album Layout\nSweden Specimen")
+
+# ==============================================================================
+# PAGE 3: Fractional Margins (12.25mm, 17.75mm, 20.25mm, 23.75mm) - Odd Page
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("darkred")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 3: FRACTIONAL MARGINS\nSub-Millimeter Precision Dimensions\nSan Marino Specimen")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 3: FRACTIONAL MARGINS\n12.25mm L, 17.75mm R, 20.25mm T, 23.75mm B\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 3: FRACTIONAL MARGINS\nDark Red Border Contrast Tone\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 3: FRACTIONAL MARGINS\nExact Framing for Specialized Mount Systems\nSweden Specimen")
+
+# ==============================================================================
+# PAGE 4: Even-Page Margin Override (Facing Pages) - Even Page
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+COLOR_ALBUM_BORDER ("purple")
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "PAGE 4: EVEN MARGIN OVERRIDE\nMirrored Binding Margins on Even Pages\nSan Marino Specimen")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "PAGE 4: EVEN MARGIN OVERRIDE\nALBUM_PAGES_MARGINSE for Bookbinding\nNew Zealand Specimen")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "PAGE 4: EVEN MARGIN OVERRIDE\nPurple Border Highlights Even Page Flow\nMalta Specimen")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "PAGE 4: EVEN MARGIN OVERRIDE\nSeamless Left-Right Page Pair Symmetry\nSweden Specimen")
