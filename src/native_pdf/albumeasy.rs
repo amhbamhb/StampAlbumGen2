@@ -1076,6 +1076,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut footer_alignment = FooterTextAlignment::Align;
     let mut footer_padding_mm = 0.0;
     let mut vertical = VerticalAlignment::Top;
+    let mut current_border_colour = AlbumBorderColour::parse(&[&border_colour_name])?;
     let mut page_settings = settings.clone();
     for (command_index, c) in commands.iter().enumerate() {
         let result = (|| -> Result<()> {
@@ -1090,6 +1091,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         )?;
                     }
                     page_settings = settings.clone();
+                    page_settings.set_border_colour(current_border_colour);
                     if c.name == "PAGE_START_VAR" {
                         page_settings
                             .set_page_spacing(Some(Spacing::parse(&[n(c, 0)?, n(c, 1)?])?));
@@ -1172,6 +1174,27 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         "COLOR_STAMP_BORDER" | "COLOUR_STAMP_BORDER" => stamp_colour = colour,
                         "COLOR_STAMP_TEXT" | "COLOUR_STAMP_TEXT" => text_colour = colour,
                         _ => heading_colour = colour,
+                    }
+                }
+                "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
+                    count(c, 1, 1)?;
+                    let parsed = AlbumBorderColour::parse(&[&c.args[0].value])?;
+                    current_border_colour = parsed;
+                    page_settings.set_border_colour(parsed);
+                    if let Some(page) = pages.last_mut() {
+                        let margin_bounds = page.layout.margin_bounds;
+                        page.layout.border_strokes = page_settings
+                            .border()
+                            .strokes(margin_bounds)?
+                            .into_iter()
+                            .map(|stroke| {
+                                (
+                                    stroke.bounds,
+                                    stroke.width_mm,
+                                    page_settings.border_line_colour(stroke.line).rgb(),
+                                )
+                            })
+                            .collect();
                     }
                 }
                 "COLOR_STAMP_BACKGROUND" | "COLOUR_STAMP_BACKGROUND" => {
@@ -1449,11 +1472,11 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     }
                 }
                 _ if c.name.starts_with("ALBUM_PAGES_")
-                    || c.name.starts_with("COLOR_ALBUM_")
+                    || (c.name.starts_with("COLOR_ALBUM_")
+                        && !matches!(c.name.to_uppercase().as_str(), "COLOR_ALBUM_BORDER"))
                     || matches!(
                         c.name.to_uppercase().as_str(),
-                        "COLOUR_ALBUM_BORDER"
-                            | "COLOUR_ALBUM_FOOTER"
+                        "COLOUR_ALBUM_FOOTER"
                             | "COLOUR_ALBUM_MARGIN_TXT"
                             | "COLOUR_ALBUM_HEADER"
                             | "COLOUR_ALBUM_TITLE"

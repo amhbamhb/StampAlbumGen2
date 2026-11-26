@@ -60,7 +60,7 @@ fn color_parser_accepts_all_common_formats() -> Result<()> {
     let c9 = Color::parse("rgb(100%, 0%, 0%)")?;
     assert_eq!(c9.rgb_u8(), [255, 0, 0]);
 
-    // 6. SVG / CSS named colours
+    // 6. SVG / CSS named colors
     let black = Color::parse("black")?;
     assert_eq!(black.rgb_u8(), [0, 0, 0]);
 
@@ -83,6 +83,61 @@ fn color_parser_accepts_all_common_formats() -> Result<()> {
 
     let abc_rgb = AlbumBorderColour::parse(&["rgb(30, 74, 122)"])?;
     assert_eq!(abc_rgb.color(), c1);
+
+    Ok(())
+}
+
+#[test]
+fn native_commands_accept_optional_color_parameter() -> Result<()> {
+    let dir = fixture_dir();
+    let tmp = std::env::temp_dir();
+
+    // 1. NATIVE_PAGE_TITLE with 4 args (default black) and 5 args (custom color)
+    let src_title_default = r#"STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+COLOR_ALBUM_BORDER (black)
+NATIVE_PAGE_TITLE (TB 15 "DEFAULT TITLE" 8)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 black 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35 26 0.175 "HN" 8 "San Marino")
+"#;
+    let album_title_default = NativeAlbum::parse(src_title_default, &dir)?;
+    let p1 = album_title_default.write_pdf(&tmp.join("test_title_default.pdf"))?;
+    assert_eq!(p1.len(), 1);
+
+    let src_title_colored = r#"STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+COLOR_ALBUM_BORDER (#1E4A7A)
+NATIVE_PAGE_TITLE (TB 15 "COLORED TITLE" 8 #1E4A7A)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 #2B5B84 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35 26 0.175 "HN" 8 "San Marino")
+"#;
+    let album_title_colored = NativeAlbum::parse(src_title_colored, &dir)?;
+    let p2 = album_title_colored.write_pdf(&tmp.join("test_title_colored.pdf"))?;
+    assert_eq!(p2.len(), 1);
+
+    // 2. NATIVE_PAGE_HEADER with 6 args (default black) and 7 args (custom color)
+    let src_header_colored = r#"STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+COLOR_ALBUM_BORDER (black)
+NATIVE_PAGE_HEADER (HN 9 C "RUNNING HEADER" 0 0 "rgb(178, 34, 34)")
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.6 black 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35 26 0.175 "HN" 8 "San Marino")
+"#;
+    let album_header_colored = NativeAlbum::parse(src_header_colored, &dir)?;
+    let p3 = album_header_colored.write_pdf(&tmp.join("test_header_colored.pdf"))?;
+    assert_eq!(p3.len(), 1);
 
     Ok(())
 }

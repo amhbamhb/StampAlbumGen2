@@ -277,34 +277,32 @@ impl NativeAlbum {
                     }
                 }
                 "NATIVE_PAGE_TITLE" => {
-                    if args.len() != 4 {
+                    if !matches!(args.len(), 4 | 5) {
                         return Err(fail(format!(
-                            "{name} requires font, size in points, quoted text, and following space in millimetres"
+                            "{name} requires font, size in points, quoted text, following space in millimetres, and optional colour"
                         )));
                     }
                     let font = unquoted(&args[0], &name).map_err(&fail)?;
                     let size = number(&args[1], &name, 2).map_err(&fail)?;
                     let text = quoted(&args[2], &name).map_err(&fail)?;
                     let following_space = number(&args[3], &name, 4).map_err(&fail)?;
+                    let colour = if let Some(arg) = args.get(4) {
+                        NamedColour::parse(&arg.value).map_err(&fail)?
+                    } else {
+                        NamedColour::parse("black").map_err(&fail)?
+                    };
                     set_once(
                         &mut page_title,
-                        AlbumPagesTitle::new(
-                            &font,
-                            size,
-                            &text,
-                            following_space,
-                            0.0,
-                            NamedColour::parse("black").map_err(&fail)?,
-                        )
-                        .map_err(&fail)?,
+                        AlbumPagesTitle::new(&font, size, &text, following_space, 0.0, colour)
+                            .map_err(&fail)?,
                         &name,
                     )
                     .map_err(&fail)?;
                 }
                 "NATIVE_PAGE_HEADER" => {
-                    if args.len() != 6 {
+                    if !matches!(args.len(), 6 | 7) {
                         return Err(fail(format!(
-                            "{name} requires font, size in points, position, quoted text, margin padding, and minimum height"
+                            "{name} requires font, size in points, position, quoted text, margin padding, minimum height, and optional colour"
                         )));
                     }
                     let font = unquoted(&args[0], &name).map_err(&fail)?;
@@ -317,6 +315,11 @@ impl NativeAlbum {
                     let text = quoted(&args[3], &name).map_err(&fail)?;
                     let padding_mm = number(&args[4], &name, 5).map_err(&fail)?;
                     let minimum_height_mm = number(&args[5], &name, 6).map_err(&fail)?;
+                    let colour = if let Some(arg) = args.get(6) {
+                        NamedColour::parse(&arg.value).map_err(&fail)?
+                    } else {
+                        NamedColour::parse("black").map_err(&fail)?
+                    };
                     set_once(
                         &mut page_header,
                         AlbumPagesHeader::new(
@@ -326,7 +329,7 @@ impl NativeAlbum {
                             &text,
                             HeaderPadding::parse(&[padding_mm]).map_err(&fail)?,
                             minimum_height_mm,
-                            NamedColour::parse("black").map_err(&fail)?,
+                            colour,
                         )
                         .map_err(&fail)?,
                         &name,
@@ -419,9 +422,9 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                 }
                 "NATIVE_PAGE_FOOTER_NUMBER" => {
-                    if args.len() != 9 {
+                    if !matches!(args.len(), 8 | 9) {
                         return Err(fail(format!(
-                            "{name} requires font, point size, position, integer start, quoted prefix, quoted suffix, padding mm, minimum height mm, and colour"
+                            "{name} requires font, point size, position, integer start, quoted prefix, quoted suffix, padding mm, minimum height mm, and optional colour"
                         )));
                     }
                     let style = AlbumPagesFooter::new(
@@ -433,8 +436,11 @@ impl NativeAlbum {
                         FooterPadding::parse(&[number(&args[6], &name, 7).map_err(&fail)?])
                             .map_err(&fail)?,
                         number(&args[7], &name, 8).map_err(&fail)?,
-                        NamedColour::parse(&unquoted(&args[8], &name).map_err(&fail)?)
-                            .map_err(&fail)?,
+                        if let Some(arg) = args.get(8) {
+                            NamedColour::parse(&arg.value).map_err(&fail)?
+                        } else {
+                            NamedColour::parse("black").map_err(&fail)?
+                        },
                     )
                     .map_err(&fail)?;
                     set_once(
@@ -456,7 +462,7 @@ impl NativeAlbum {
                             "{name} requires font, size, quoted text, position, alignment, direction, explicit border gap mm and colour"
                         )));
                     }
-                    for index in [0, 3, 4, 5, 7] {
+                    for index in [0, 3, 4, 5] {
                         if args[index].quoted {
                             return Err(fail(format!(
                                 "{name} argument {} must be unquoted",
