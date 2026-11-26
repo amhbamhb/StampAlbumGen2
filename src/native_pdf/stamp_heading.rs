@@ -322,6 +322,9 @@ pub(crate) fn paginate_native_with_page_breaks(
                 if let Some(colour) = entry.border_colour {
                     active_settings.set_border_colour(colour);
                 }
+                if let Some(size) = entry.page_size {
+                    active_settings.set_size(size);
+                }
                 super::pagination::advance_page(
                     &active_settings,
                     &mut pages,

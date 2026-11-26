@@ -179,6 +179,10 @@ impl PageSettings {
         self.size
     }
 
+    pub fn set_size(&mut self, size: PageSize) {
+        self.size = size;
+    }
+
     pub fn set_decorative_border(&mut self, border: AlbumPagesDecorativeBorder) {
         self.decorative_border = Some(border);
     }
