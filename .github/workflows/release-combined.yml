@@ -303,21 +303,7 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
           NOTE_ARGS=("--generate-notes")
-          if python3 -c '
-import re, sys
-tag = sys.argv[1].lstrip("v")
-try:
-    with open("RELEASE_NOTES.md", "r", encoding="utf-8") as f:
-        text = f.read()
-    m = re.search(rf"(#+ Stamp Album Generator v?{re.escape(tag)} Release Notes.*?(?=\n#+ Stamp Album Generator|\Z))", text, re.DOTALL | re.IGNORECASE)
-    if m and len(m.group(1).strip()) > 50:
-        with open("release_notes_body.md", "w", encoding="utf-8") as out:
-            out.write(m.group(1).strip())
-        sys.exit(0)
-except Exception:
-    pass
-sys.exit(1)
-' "$TAG"; then
+          if python3 scripts/extract_release_notes.py "$TAG"; then
             NOTE_ARGS=("--notes-file" "release_notes_body.md")
           fi
           case "$status" in
