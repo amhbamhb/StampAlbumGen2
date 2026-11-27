@@ -106,7 +106,7 @@ This chapter catalogs all 43 command families featured on the official website g
   "PAGE_START / NATIVE_PAGE_START / NATIVE_PAGE_BREAK ()",
   "Triggers explicit physical page boundaries, group template parameter expansions, and deliberate blank pages.",
   "PAGE_START
-PAGE_START ("United States" 1959 "Liberty Issue")",
+PAGE_START (\"United States\" 1959 \"Liberty Issue\")",
   "NATIVE_PAGE_START ()
 NATIVE_PAGE_BREAK (4.0 14.0)",
   thumb_name: "page-start-v1--two-pages.png"
