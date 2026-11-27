@@ -115,14 +115,14 @@ pub(super) fn render_update_dialog_html() -> &'static str {
             </div>
             <span id='updateBadgePill' style='margin-left:auto;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:2px 8px;border-radius:9999px;'>AVAILABLE</span>
         </div>
-        <div id='updateReleaseNotesContainer' style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;max-height:180px;overflow-y:auto;'>
-            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>
+        <div id='updateReleaseNotesContainer' style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;max-height:220px;overflow-y:auto;'>
+            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
                 <div style='font-size:12px;font-weight:600;color:#475467;'>Release Notes:</div>
                 <a id='updateReleaseDocLink' href='/release-notes' target='_blank' rel='noopener noreferrer' style='font-size:11px;color:#2563eb;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:#eff6ff;padding:2px 8px;border-radius:4px;border:1px solid #bfdbfe;'>
                     <span>📄</span> Full Release Notes ↗
                 </a>
             </div>
-            <div id='updateReleaseNotes' style='font-size:12px;color:#334155;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;'>Loading release notes...</div>
+            <div id='updateReleaseNotes' style='font-size:12.5px;color:#334155;line-height:1.5;overflow-wrap:anywhere;'>Loading release notes...</div>
         </div>
         <div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:9px 12px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px;'>
             <span style='font-size:16px;'>📘</span>
@@ -167,6 +167,81 @@ function checkAppUpdateStatus() {
         });
 }
 
+function formatMarkdownToHtml(raw) {
+    if (!raw) return '';
+    var lines = raw.split(/\r?\n/);
+    var html = [];
+    var inList = false;
+    var inCodeBlock = false;
+
+    for (var i = 0; i < lines.length; i++) {
+        var rawLine = lines[i];
+        var line = rawLine.trim();
+
+        if (line.startsWith('```')) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            if (inCodeBlock) {
+                html.push('</code></pre>');
+                inCodeBlock = false;
+            } else {
+                html.push('<pre style="background:#f1f5f9;border:1px solid #cbd5e1;padding:8px 12px;border-radius:6px;overflow-x:auto;"><code style="font-size:11.5px;font-family:monospace;color:#0f172a;">');
+                inCodeBlock = true;
+            }
+            continue;
+        }
+
+        if (inCodeBlock) {
+            var esc = rawLine.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html.push(esc + '\n');
+            continue;
+        }
+
+        if (!line) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            continue;
+        }
+
+        if (/^---+$/.test(line) || /^___+$/.test(line) || /^\*\*\*+$/.test(line)) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<hr style="border:none;border-top:1px solid #cbd5e1;margin:10px 0;" />');
+            continue;
+        }
+
+        var s = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        s = s.replace(/`([^`]+)`/g, '<code style="background:#e2e8f0;padding:1px 5px;border-radius:3px;font-size:11px;font-family:monospace;color:#0f172a;">$1</code>');
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/(^|[^\*])\*([^*]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
+        s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;word-break:break-all;">$1</a>');
+        s = s.replace(/(^|[^">])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;word-break:break-all;">$2</a>');
+
+        if (s.startsWith('#### ')) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h5 style="margin:6px 0 2px 0;font-size:11.5px;font-weight:700;color:#334155;">' + s.substring(5) + '</h5>');
+        } else if (s.startsWith('### ')) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h4 style="margin:8px 0 3px 0;font-size:12.5px;font-weight:700;color:#1e293b;">' + s.substring(4) + '</h4>');
+        } else if (s.startsWith('## ')) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h3 style="margin:10px 0 4px 0;font-size:13.5px;font-weight:700;color:#0f172a;">' + s.substring(3) + '</h3>');
+        } else if (s.startsWith('# ')) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h2 style="margin:12px 0 5px 0;font-size:14.5px;font-weight:700;color:#0f172a;">' + s.substring(2) + '</h2>');
+        } else if (s.startsWith('- ') || s.startsWith('* ')) {
+            if (!inList) {
+                html.push('<ul style="margin:4px 0 6px 0;padding-left:18px;list-style-type:disc;">');
+                inList = true;
+            }
+            html.push('<li style="margin-bottom:3px;color:#334155;line-height:1.4;">' + s.substring(2) + '</li>');
+        } else {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<p style="margin:3px 0 5px 0;color:#334155;line-height:1.45;">' + s + '</p>');
+        }
+    }
+    if (inList) { html.push('</ul>'); }
+    if (inCodeBlock) { html.push('</code></pre>'); }
+    return html.join('');
+}
+
 function renderUpdateDialogNotes(data) {
     var cur = document.getElementById('updateCurrentVer');
     if (cur) cur.textContent = 'v' + (data.current_version || '');
@@ -175,10 +250,7 @@ function renderUpdateDialogNotes(data) {
     var notes = document.getElementById('updateReleaseNotes');
     if (notes) {
         var raw = data.release_notes || 'Performance enhancements and bug fixes.';
-        var safe = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        safe = safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;">$1</a>');
-        safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        notes.innerHTML = safe;
+        notes.innerHTML = formatMarkdownToHtml(raw);
     }
 }
 

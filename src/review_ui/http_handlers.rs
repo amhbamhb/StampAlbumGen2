@@ -294,7 +294,137 @@ fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Reque
             .replace('<', "&lt;")
             .replace('>', "&gt;");
         let html = format!(
-            r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>Release Notes - Stamp Album Generator</title><style>body{{font-family:system-ui,-apple-system,sans-serif;max-width:840px;margin:2rem auto;padding:0 1.5rem;line-height:1.6;color:#1e293b;background:#f8fafc;}}pre{{background:#ffffff;border:1px solid #cbd5e1;padding:1.5rem;border-radius:8px;white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;}}h1{{color:#1e3a8a;font-size:22px;}}a{{color:#2563eb;}}</style></head><body><h1>Stamp Album Generator Release Notes</h1><pre>{safe}</pre></body></html>"#
+            r##"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Release Notes - Stamp Album Generator</title>
+<style>
+body {{ font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.6; color: #1e293b; background: #f8fafc; }}
+.header-bar {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1.5rem; }}
+.header-bar h1 {{ margin: 0; color: #1e3a8a; font-size: 20px; }}
+.btn-toggle {{ background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; }}
+.btn-toggle:hover {{ background: #dbeafe; }}
+.content-box {{ background: #ffffff; border: 1px solid #cbd5e1; padding: 1.75rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
+.content-box h2 {{ font-size: 17px; color: #0f172a; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }}
+.content-box h3 {{ font-size: 15px; color: #1e3a8a; margin-top: 1.25rem; margin-bottom: 0.4rem; }}
+.content-box h4 {{ font-size: 13.5px; color: #334155; margin-top: 1rem; margin-bottom: 0.3rem; }}
+.content-box h5 {{ font-size: 12px; color: #475467; margin-top: 0.75rem; margin-bottom: 0.2rem; }}
+.content-box ul {{ padding-left: 22px; margin: 0.5rem 0; }}
+.content-box li {{ margin-bottom: 0.35rem; color: #334155; }}
+.content-box code {{ background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: monospace; color: #0f172a; }}
+.content-box pre {{ background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 6px; overflow-x: auto; }}
+.content-box hr {{ border: none; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }}
+.content-box a {{ color: #2563eb; text-decoration: underline; }}
+#rawBox {{ display: none; background: #ffffff; border: 1px solid #cbd5e1; padding: 1.5rem; border-radius: 8px; white-space: pre-wrap; font-family: monospace; font-size: 12px; line-height: 1.5; color: #334155; }}
+</style>
+</head>
+<body>
+<div class="header-bar">
+  <h1>Stamp Album Generator Release Notes</h1>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="btn-toggle" onclick="toggleView()" id="btnToggle">View Raw Markdown</button>
+  </div>
+</div>
+<div id="notesContainer" class="content-box"></div>
+<pre id="rawBox">{safe}</pre>
+<script>
+function formatMarkdownToHtml(raw) {{
+    if (!raw) return '';
+    var lines = raw.split(/\r?\n/);
+    var html = [];
+    var inList = false;
+    var inCodeBlock = false;
+
+    for (var i = 0; i < lines.length; i++) {{
+        var rawLine = lines[i];
+        var line = rawLine.trim();
+
+        if (line.startsWith('```')) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            if (inCodeBlock) {{
+                html.push('</code></pre>');
+                inCodeBlock = false;
+            }} else {{
+                html.push('<pre style="background:#f1f5f9;border:1px solid #cbd5e1;padding:8px 12px;border-radius:6px;overflow-x:auto;"><code style="font-size:11.5px;font-family:monospace;color:#0f172a;">');
+                inCodeBlock = true;
+            }}
+            continue;
+        }}
+
+        if (inCodeBlock) {{
+            var esc = rawLine.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html.push(esc + '\n');
+            continue;
+        }}
+
+        if (!line) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            continue;
+        }}
+
+        if (/^---+$/.test(line) || /^___+$/.test(line) || /^\*\*\*+$/.test(line)) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            html.push('<hr style="border:none;border-top:1px solid #cbd5e1;margin:10px 0;" />');
+            continue;
+        }}
+
+        var s = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        s = s.replace(/`([^`]+)`/g, '<code style="background:#e2e8f0;padding:1px 5px;border-radius:3px;font-size:11px;font-family:monospace;color:#0f172a;">$1</code>');
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/(^|[^\*])\*([^*]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
+        s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;word-break:break-all;">$1</a>');
+        s = s.replace(/(^|[^">])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;word-break:break-all;">$2</a>');
+
+        if (s.startsWith('#### ')) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            html.push('<h5 style="margin:6px 0 2px 0;font-size:12px;font-weight:700;color:#334155;">' + s.substring(5) + '</h5>');
+        }} else if (s.startsWith('### ')) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            html.push('<h4 style="margin:8px 0 3px 0;font-size:13.5px;font-weight:700;color:#1e293b;">' + s.substring(4) + '</h4>');
+        }} else if (s.startsWith('## ')) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            html.push('<h3 style="margin:10px 0 4px 0;font-size:15px;font-weight:700;color:#0f172a;">' + s.substring(3) + '</h3>');
+        }} else if (s.startsWith('# ')) {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            html.push('<h2 style="margin:12px 0 5px 0;font-size:17px;font-weight:700;color:#0f172a;">' + s.substring(2) + '</h2>');
+        }} else if (s.startsWith('- ') || s.startsWith('* ')) {{
+            if (!inList) {{
+                html.push('<ul style="margin:4px 0 6px 0;padding-left:18px;list-style-type:disc;">');
+                inList = true;
+            }}
+            html.push('<li style="margin-bottom:3px;color:#334155;line-height:1.4;">' + s.substring(2) + '</li>');
+        }} else {{
+            if (inList) {{ html.push('</ul>'); inList = false; }}
+            html.push('<p style="margin:3px 0 5px 0;color:#334155;line-height:1.45;">' + s + '</p>');
+        }}
+    }}
+    if (inList) {{ html.push('</ul>'); }}
+    if (inCodeBlock) {{ html.push('</code></pre>'); }}
+    return html.join('');
+}}
+
+var rawMarkdown = document.getElementById('rawBox').textContent;
+document.getElementById('notesContainer').innerHTML = formatMarkdownToHtml(rawMarkdown);
+
+function toggleView() {{
+  var formatted = document.getElementById('notesContainer');
+  var raw = document.getElementById('rawBox');
+  var btn = document.getElementById('btnToggle');
+  if (formatted.style.display === 'none') {{
+    formatted.style.display = 'block';
+    raw.style.display = 'none';
+    btn.textContent = 'View Raw Markdown';
+  }} else {{
+    formatted.style.display = 'none';
+    raw.style.display = 'block';
+    btn.textContent = 'View Formatted View';
+  }}
+}}
+</script>
+</body>
+</html>"##
         );
         let mut response = Response::from_string(html).with_status_code(StatusCode(200));
         if let Ok(header) = Header::from_bytes("Content-Type", "text/html; charset=utf-8") {
