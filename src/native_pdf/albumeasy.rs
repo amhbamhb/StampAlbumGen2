@@ -160,6 +160,8 @@ fn supported(name: &str) -> bool {
             | "ALBUM_STAMP_SETTINGS_RESTORE"
             | "PAGE_START"
             | "PAGE_START_VAR"
+            | "NATIVE_PAGE_BREAK"
+            | "NATIVE_PAGE_START"
             | "PAGE_START_GROUP_BEGIN"
             | "PAGE_START_GROUP_END"
             | "PAGE_VSPACE"
@@ -278,7 +280,10 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
                 group_open = false;
             }
             _ if group_open => {
-                if matches!(name, "PAGE_START" | "PAGE_START_VAR") {
+                if matches!(
+                    name,
+                    "PAGE_START" | "PAGE_START_VAR" | "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START"
+                ) {
                     return Err(format!(
                         "Line {line_number}: {name} is not allowed inside its own group"
                     ));
@@ -292,16 +297,26 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
                 let mut c = command(line, line_number)?;
                 if matches!(
                     c.name.to_uppercase().as_str(),
-                    "PAGE_START" | "PAGE_START_VAR"
+                    "PAGE_START" | "PAGE_START_VAR" | "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START"
                 ) {
-                    let spacing_count = if c.name == "PAGE_START_VAR" { 2 } else { 0 };
+                    let spacing_count = if c.name.to_uppercase() == "PAGE_START_VAR"
+                        || (matches!(
+                            c.name.to_uppercase().as_str(),
+                            "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START"
+                        ) && c.args.len() >= 2
+                            && n(&c, 0).is_ok()
+                            && n(&c, 1).is_ok())
+                    {
+                        2
+                    } else {
+                        0
+                    };
                     count(&c, spacing_count, spacing_count + 9)
                         .map_err(|error| format!("{}: {error}", c.location()))?;
                     if spacing_count == 2 {
                         let spacing = (|| Spacing::parse(&[n(&c, 0)?, n(&c, 1)?]))();
-                        spacing.map_err(|error| {
-                            format!("{} (PAGE_START_VAR): {error}", c.location())
-                        })?;
+                        spacing
+                            .map_err(|error| format!("{} ({}): {error}", c.location(), c.name))?;
                     }
                     if group.is_none() && c.args.len() > spacing_count {
                         return Err(format!(
@@ -755,7 +770,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     for c in commands.iter().take_while(|c| {
         !matches!(
             c.name.to_uppercase().as_str(),
-            "PAGE_START" | "PAGE_START_VAR"
+            "PAGE_START" | "PAGE_START_VAR" | "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START"
         )
     }) {
         let result = (|| -> Result<()> {
@@ -1062,7 +1077,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         .filter(|c| {
             matches!(
                 c.name.to_uppercase().as_str(),
-                "PAGE_START" | "PAGE_START_VAR"
+                "PAGE_START" | "PAGE_START_VAR" | "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START"
             )
         })
         .count();
@@ -1101,7 +1116,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     for (command_index, c) in commands.iter().enumerate() {
         let result = (|| -> Result<()> {
             match c.name.to_uppercase().as_str() {
-                "PAGE_START" | "PAGE_START_VAR" => {
+                "PAGE_START" | "PAGE_START_VAR" | "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START" => {
                     if let Some(page) = pages.last_mut() {
                         flush(
                             &mut row,
@@ -1112,7 +1127,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     }
                     page_settings = settings.clone();
                     page_settings.set_border_colour(current_border_colour);
-                    if c.name == "PAGE_START_VAR" {
+                    if c.name.to_uppercase() == "PAGE_START_VAR"
+                        || (matches!(
+                            c.name.to_uppercase().as_str(),
+                            "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START"
+                        ) && c.args.len() == 2)
+                    {
                         page_settings
                             .set_page_spacing(Some(Spacing::parse(&[n(c, 0)?, n(c, 1)?])?));
                     }

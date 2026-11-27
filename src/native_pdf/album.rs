@@ -782,7 +782,7 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
-                "NATIVE_PAGE_BREAK" => {
+                "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START" | "PAGE_START" => {
                     if !matches!(args.len(), 0 | 2) {
                         return Err(fail(format!(
                             "{name} takes no arguments or two spacing values"
