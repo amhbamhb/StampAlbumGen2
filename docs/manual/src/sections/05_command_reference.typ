@@ -167,3 +167,28 @@ Every native styling command accepts any of these color formats interchangeably:
 
 === Strict Print-Safe Color Integrity
 Archival stamp album printing requires consistent, opaque vector ink rendering. Transparency (alpha channels such as `rgba(...)` or `#RRGGBBAA`), `transparent`, and `none` are strictly rejected at parse time with clear diagnostics to guarantee that printed pages never suffer from color-mixing artifacts or invisible borders.
+
+== 5.7 Page Breaks, Group Templates & Blank Pages (`page-start-v1`)
+
+Organizing stamps into logical sets and commemorative series requires precise control over page breaks and recurring page structures:
+
+=== Explicit Page Breaks (`PAGE_START` / `NATIVE_PAGE_BREAK`)
+An explicit page break terminates the current page, flushes any active stamp row, and begins a new clean sheet:
+- `PAGE_START` or `NATIVE_PAGE_START`: Standard zero-argument page break.
+- `NATIVE_PAGE_BREAK ([horizontal_mm vertical_mm])`: Page break with optional per-page stamp and row spacing overrides.
+- *Active Row Flushing:* Any active stamp row in progress is guaranteed to complete and render on the current page before the renderer advances to the next page.
+- *Layout Preservation:* Album borders, headers, and footer page numbers repeat automatically across every page.
+
+=== Reusable Page Templates (`PAGE_START_GROUP_BEGIN` / `PAGE_START_GROUP_END`)
+To eliminate repetitive page text, collectors can declare a template group once before pages begin:
+```
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT_CENTRE (TB 11 $$1 5)
+PAGE_TEXT_CENTRE (HN 9 "Year: $$2" 5)
+PAGE_START_GROUP_END
+```
+Whenever `PAGE_START ("United States" 1959)` is invoked, `$$1` and `$$2` are dynamically replaced with the arguments for that specific page.
+
+=== Intentional Blank Pages
+Consecutive or leading page breaks (`NATIVE_PAGE_BREAK ()` or `PAGE_START`) gracefully generate blank bordered, numbered pages. This allows collectors to reserve facing pages for postal covers, first-day covers, or glassine interleaving sheets without layout errors.
+

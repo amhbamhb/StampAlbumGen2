@@ -1,0 +1,63 @@
+# AlbumEasy 4.5.0 reference only. All-in-one comprehensive showcase.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - PAGE BREAK SHOWCASE" 5)
+ALBUM_PAGES_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$")
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+
+# Group template definition for the showcase
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT_CENTRE (TB 11 $$1 5)
+PAGE_TEXT_CENTRE (HN 9 $$2 5)
+PAGE_TEXT_CENTRE (HN 8 $$3 5)
+PAGE_START_GROUP_END
+
+# VARIATION 1: BASIC PAGE 1
+PAGE_START ("EXPLICIT PAGE START - PAGE ONE" "Variation 1: Basic Explicit Page Start" "The next pair starts on a new page despite unused space")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical size\nFirst-page wide design" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical size\nFirst-page portrait design" "")
+
+# VARIATION 1: BASIC PAGE 2
+PAGE_START ("EXPLICIT PAGE START - PAGE TWO" "Variation 1: Basic Explicit Page Start" "Border and title repeat; preceding row stays on page one")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm physical size\nSecond-page portrait design" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm physical size\nSecond-page wide design" "")
+
+# VARIATION 2: GROUP TEMPLATE EXPANSION (PAGE 3)
+PAGE_START ("FIRST GROUP PAGE" "Variation 2: Group Template Expansion" "Year: 1959 | Quoted multiword parameters")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical size\nFirst group invocation" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical size\nQuoted multiword parameters" "")
+
+# VARIATION 2: GROUP TEMPLATE EXPANSION (PAGE 4)
+PAGE_START ("SECOND GROUP PAGE" "Variation 2: Group Template Expansion" "Year: 1960 | Substitution must not leak")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm physical size\nSecond group invocation" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm physical size\nSubstitution must not leak" "")
+
+# VARIATION 3: LEADING BLANK (PAGE 5)
+PAGE_START ("INTENTIONAL BLANK PAGE" "Variation 3: Blank Pages" "Leading blank page created by intentional break")
+
+# VARIATION 3: CONTENT (PAGE 6)
+PAGE_START ("PAGE SIX CONTENT" "Variation 3: Blank Pages" "Follows intentional leading blank page 5")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\nVARIATION 3: Page six (follows blank page 5)" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\nPage six content" "")
+
+# VARIATION 3: MIDDLE BLANK (PAGE 7)
+PAGE_START ("INTENTIONAL BLANK PAGE" "Variation 3: Blank Pages" "Middle blank page created by repeated break")
+
+# VARIATION 3: CONTENT (PAGE 8)
+PAGE_START ("PAGE EIGHT CONTENT" "Variation 3: Blank Pages" "Follows intentional middle blank page 7")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\nVARIATION 3: Page eight (follows blank page 7)" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\nPage eight content" "")
+
+# VARIATION 3: TRAILING BLANK (PAGE 9)
+PAGE_START ("INTENTIONAL BLANK PAGE" "Variation 3: Blank Pages" "Trailing blank page created by trailing break")
