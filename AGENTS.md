@@ -169,6 +169,8 @@ Every agent must run and pass the following quality gates BEFORE staging or comm
          ```
        - Ensure the issue number is explicitly linked in the PR body (`Closes #<num>` or `Fixes #<num>`) so that the complete issue lifecycle (creation -> branch -> implementation -> commit -> push -> PR) is fully connected and automatically closes the issue upon merge.
        - **User-Facing First PR Description Format (MANDATORY)**: Write PR descriptions starting with clear, general, and accessible language explaining what has changed and why it helps stamp collectors. The in-application update notification system reads and presents this summary directly to users. Place technical implementation details, internal architecture notes, parameter mappings, and command grammar in a collapsible or dedicated **Technical Details** section at the bottom.
+       - **Update & Link Issue with PR (MANDATORY)**: Immediately upon creating the PR, post an update comment on the original GitHub issue containing the PR link (e.g. `gh issue comment <num> --repo amhbamhb/StampAlbumGen2 --body "Pull request created: <pr-url>"`). This ensures the issue is actively updated and cross-linked across the entire lifecycle.
+- **NEVER Push Directly to `main` (STRICTLY PROHIBITED)**: Direct pushes to `main` are strictly forbidden under all circumstances—no matter how small the fix, documentation update, or CI tweak. Every change MUST be done on a dedicated branch (`feature/issue-...` or `fix/issue-...`) and merged exclusively through a GitHub Pull Request.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.
 
