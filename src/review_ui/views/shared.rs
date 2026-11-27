@@ -116,7 +116,12 @@ pub(super) fn render_update_dialog_html() -> &'static str {
             <span id='updateBadgePill' style='margin-left:auto;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:2px 8px;border-radius:9999px;'>AVAILABLE</span>
         </div>
         <div id='updateReleaseNotesContainer' style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;max-height:180px;overflow-y:auto;'>
-            <div style='font-size:12px;font-weight:600;color:#475467;margin-bottom:6px;'>Release Notes:</div>
+            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>
+                <div style='font-size:12px;font-weight:600;color:#475467;'>Release Notes:</div>
+                <a id='updateReleaseDocLink' href='/release-notes' target='_blank' rel='noopener noreferrer' style='font-size:11px;color:#2563eb;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:#eff6ff;padding:2px 8px;border-radius:4px;border:1px solid #bfdbfe;'>
+                    <span>📄</span> Full Release Notes ↗
+                </a>
+            </div>
             <div id='updateReleaseNotes' style='font-size:12px;color:#334155;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;'>Loading release notes...</div>
         </div>
         <div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:9px 12px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px;'>
@@ -162,18 +167,37 @@ function checkAppUpdateStatus() {
         });
 }
 
+function renderUpdateDialogNotes(data) {
+    var cur = document.getElementById('updateCurrentVer');
+    if (cur) cur.textContent = 'v' + (data.current_version || '');
+    var lat = document.getElementById('updateLatestVer');
+    if (lat) lat.textContent = 'v' + (data.latest_version || '');
+    var notes = document.getElementById('updateReleaseNotes');
+    if (notes) {
+        var raw = data.release_notes || 'Performance enhancements and bug fixes.';
+        var safe = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        safe = safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;">$1</a>');
+        safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        notes.innerHTML = safe;
+    }
+}
+
 function openUpdateDialog() {
     var dialog = document.getElementById('updateAppDialog');
     if (!dialog) return;
     var data = window._updateInfo;
     if (data) {
-        var cur = document.getElementById('updateCurrentVer');
-        if (cur) cur.textContent = 'v' + (data.current_version || '');
-        var lat = document.getElementById('updateLatestVer');
-        if (lat) lat.textContent = 'v' + (data.latest_version || '');
-        var notes = document.getElementById('updateReleaseNotes');
-        if (notes) notes.textContent = data.release_notes || 'Performance enhancements and bug fixes.';
+        renderUpdateDialogNotes(data);
     }
+    fetch('/api/check-update-now', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(fresh) {
+            if (fresh && fresh.ok) {
+                window._updateInfo = fresh;
+                renderUpdateDialogNotes(fresh);
+            }
+        })
+        .catch(function() {});
     if (typeof dialog.showModal === 'function') {
         dialog.showModal();
     } else {

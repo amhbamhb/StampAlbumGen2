@@ -285,6 +285,29 @@ fn handle_site_account_request(mut request: tiny_http::Request) -> Option<tiny_h
 fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Request> {
     let method = request.method().clone();
     let url = request.url();
+
+    if method == Method::Get && (url == "/release-notes" || url == "/api/release-notes") {
+        let content = std::fs::read_to_string("RELEASE_NOTES.md")
+            .unwrap_or_else(|_| include_str!("../../RELEASE_NOTES.md").to_string());
+        let safe = content
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;");
+        let html = format!(
+            r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>Release Notes - Stamp Album Generator</title><style>body{{font-family:system-ui,-apple-system,sans-serif;max-width:840px;margin:2rem auto;padding:0 1.5rem;line-height:1.6;color:#1e293b;background:#f8fafc;}}pre{{background:#ffffff;border:1px solid #cbd5e1;padding:1.5rem;border-radius:8px;white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;}}h1{{color:#1e3a8a;font-size:22px;}}a{{color:#2563eb;}}</style></head><body><h1>Stamp Album Generator Release Notes</h1><pre>{safe}</pre></body></html>"#
+        );
+        let mut response = Response::from_string(html).with_status_code(StatusCode(200));
+        if let Ok(header) = Header::from_bytes("Content-Type", "text/html; charset=utf-8") {
+            response = response.with_header(header);
+        }
+        if let Err(error) = request.respond(response) {
+            log_runtime_event(&format!(
+                "Failed responding to release-notes request: {error}"
+            ));
+        }
+        return None;
+    }
+
     let (body, status) = if method == Method::Get && url == "/api/update-status" {
         let progress = crate::updater::get_update_progress();
         let resp = match crate::updater::check_for_updates(false) {
