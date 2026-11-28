@@ -1,4 +1,4 @@
-# Stamp Album Generator v1.15.11 Release Notes
+# Stamp Album Generator v1.15.12 Release Notes
 
 ## 🌟 What's New for Stamp Collectors
 
@@ -20,7 +20,7 @@ This release introduces comprehensive page layout, binding margin, and custom di
 
 ---
 
-# Stamp Album Generator v1.15.11 Release Notes
+# Stamp Album Generator v1.15.12 Release Notes
 
 ## Overview
 
@@ -163,8 +163,8 @@ For issues or questions, please check the embedded documentation in the source c
 
 ---
 
-**Release Date**: 2026-11-27
-**Version**: 1.15.11
+**Release Date**: 2026-11-28
+**Version**: 1.15.12
 **Build**: Release (optimized)</content>
 
 ---
@@ -185,7 +185,7 @@ This patch fixes a header aggregation bug and improves placeholder image sizing 
 
 - A small lint/cleanup pass remains (non-functional dead_code warnings) and can be addressed in a follow-up.
 
-**Release Date**: 2026-11-27
-**Version**: 1.15.11
+**Release Date**: 2026-11-28
+**Version**: 1.15.12
 
 <parameter name="filePath">RELEASE_NOTES.md
