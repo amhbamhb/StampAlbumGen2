@@ -19,8 +19,6 @@ let nativeDialogInFlight = false;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
 const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
 const albumsRootPanelStorageKey = 'reviewui.bootstrap.albumsRootPanel';
-const stampworldPanelStorageKey = 'reviewui.bootstrap.stampworldPanel';
-const colnectCopyPanelStorageKey = 'reviewui.bootstrap.colnectCopyPanel';
 const selectedCountryStorageKey = 'reviewui.bootstrap.selectedCountry';
 const stampworldStartYearStorageKey = 'reviewui.stampworld.startYear';
 const stampworldEndYearStorageKey = 'reviewui.stampworld.endYear';
@@ -41,8 +39,6 @@ function initCollapsiblePanel(panelId, storageKey) {
 
 initCollapsiblePanel('introPanel', introPanelStorageKey);
 initCollapsiblePanel('albumsRootPanel', albumsRootPanelStorageKey);
-initCollapsiblePanel('stampworldPanel', stampworldPanelStorageKey);
-initCollapsiblePanel('colnectCopyPanel', colnectCopyPanelStorageKey);
 const backendHealthFailureThreshold = 2;
 
 function reloadCurrentPage() {
@@ -400,8 +396,8 @@ function applyCountrySearchSelection() {
     if (swCountryRow) swCountryRow.style.display = '';
     if (swCountryFixedRow) swCountryFixedRow.style.display = 'none';
     if (swAlbumeasyRow) swAlbumeasyRow.style.display = '';
-    document.getElementById('stampworldPanel').style.display = '';
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(typed);
+    const swCmd = document.getElementById('swCmd');
+    if (swCmd) swCmd.innerText = suggestedStampworldCommand(typed);
     setCountrySearchStatus('Matches: 0/0');
     if (status) status.innerText = `No exact DB match for "${typed}". You can run StampWorld pull for this typed country.`;
 }
@@ -955,14 +951,10 @@ function renderCountryPanel() {
 
     if (!c) {
         document.getElementById('countryPanel').innerHTML = '<em>No countries found under Albums/*/*.db</em>';
-        document.getElementById('stampworldPanel').style.display = '';
         const swCountryRow = document.getElementById('swCountryRow');
         const swCountryFixedRow = document.getElementById('swCountryFixedRow');
         const swCountryFixed = document.getElementById('swCountryFixed');
         const swCountry = document.getElementById('swCountry');
-        const dirPathEl = document.getElementById('colnectDirPath');
-        const countBadge = document.getElementById('colnectCopyCountBadge');
-        const copyStatus = document.getElementById('colnectCopyStatus');
         if (swCountry) swCountry.value = '';
         if (swCountryFixed) {
             if ('value' in swCountryFixed) swCountryFixed.value = '';
@@ -970,16 +962,10 @@ function renderCountryPanel() {
         }
         if (swCountryRow) swCountryRow.style.display = '';
         if (swCountryFixedRow) swCountryFixedRow.style.display = 'none';
-        if (dirPathEl) dirPathEl.innerText = '(select a country)';
-        if (countBadge) countBadge.innerText = 'Files: 0';
-        if (copyStatus) {
-            copyStatus.className = 'colnectCopyStatus';
-            copyStatus.style.display = '';
-            copyStatus.textContent = 'Select a country to import Colnect - User Created CSV files.';
-        }
         if (swLead) swLead.innerText = 'Run StampWorld pull to create a country database.';
         if (swHint) swHint.innerText = 'Type any country name below and run StampWorld pull. This field is editable and not limited to existing countries.';
-        document.getElementById('swCmd').innerText = suggestedStampworldCommand('');
+        const swCmd = document.getElementById('swCmd');
+        if (swCmd) swCmd.innerText = suggestedStampworldCommand('');
         updateStampWorldRunStatus('Ready to run', false, false);
         return;
     }
@@ -995,7 +981,8 @@ function renderCountryPanel() {
     const swCountryFixedRow = document.getElementById('swCountryFixedRow');
     const swCountryFixed = document.getElementById('swCountryFixed');
     const swAlbumeasyRow = document.getElementById('swAlbumeasyRow');
-    document.getElementById('swCountry').value = c.country;
+    const swCountry = document.getElementById('swCountry');
+    if (swCountry) swCountry.value = c.country;
     if (swCountryFixed) {
         if ('value' in swCountryFixed) swCountryFixed.value = c.country;
         else swCountryFixed.innerText = c.country;
@@ -1003,127 +990,14 @@ function renderCountryPanel() {
     if (swCountryRow) swCountryRow.style.display = 'none';
     if (swCountryFixedRow) swCountryFixedRow.style.display = '';
     if (swAlbumeasyRow) swAlbumeasyRow.style.display = 'none';
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(c.country);
-    document.getElementById('stampworldPanel').style.display = '';
+    const swCmd = document.getElementById('swCmd');
+    if (swCmd) swCmd.innerText = suggestedStampworldCommand(c.country);
 
     if (swLead) swLead.innerText = 'Run StampWorld pull for this country (including additional pull).';
     if (swHint) swHint.innerText = 'You can rerun StampWorld even when data already exists, or edit the country field to pull for a different/new country.';
     updateStampWorldRunStatus('Ready to run', false, false);
 
-    const dirPathEl = document.getElementById('colnectDirPath');
-    const countBadge = document.getElementById('colnectCopyCountBadge');
-    if (dirPathEl) dirPathEl.innerText = c.colnect_dir || '(unknown)';
-    if (countBadge) countBadge.innerText = 'Files: ' + (c.colnect_file_count || 0);
 
-    const swDirPathEl = document.getElementById('stampworldDirPath');
-    const swCountBadge = document.getElementById('stampworldCopyCountBadge');
-    if (swDirPathEl) swDirPathEl.innerText = c.stampworld_dir || '(unknown)';
-    if (swCountBadge) swCountBadge.innerText = 'Files: ' + (c.stampworld_file_count || 0);
-}
-
-async function pickAndCopyColnectFile() {
-    const country = document.getElementById('countrySel').value;
-    if (!country) { appendColnectCopyLog('Select a country first.'); return; }
-    const btn = document.getElementById('colnectPickBtn');
-    const statusEl = document.getElementById('colnectCopyStatus');
-    const logEl = document.getElementById('colnectCopyLog');
-    if (btn) btn.disabled = true;
-    if (statusEl) { statusEl.className = 'colnectCopyStatus'; statusEl.style.display = ''; statusEl.textContent = 'Opening file picker\u2026'; }
-    if (logEl) logEl.style.display = '';
-    try {
-        const r = await fetch('/api/bootstrap-pick-colnect-file', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ country })
-        });
-        const j = await r.json();
-        if (j.ok && j.picked) {
-            if (statusEl) { statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 Copied: ' + (j.file_name || ''); }
-            appendColnectCopyLog('\u2714 ' + (j.message || 'File copied'));
-            await refreshState();
-        } else if (j.ok && !j.picked) {
-            if (statusEl) statusEl.textContent = 'Cancelled';
-        } else {
-            if (statusEl) { statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 ' + (j.message || 'Failed'); }
-            appendColnectCopyLog('\u2718 ' + (j.message || 'Failed'));
-        }
-    } catch (e) {
-        if (statusEl) { statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 Error: ' + e; }
-        appendColnectCopyLog('Error: ' + e);
-    } finally {
-        if (btn) btn.disabled = false;
-    }
-}
-
-function appendColnectCopyLog(text) {
-    const logEl = document.getElementById('colnectCopyLog');
-    if (!logEl) return;
-    const el = document.createElement('div');
-    el.className = 'line';
-    el.textContent = new Date().toLocaleTimeString() + ' ' + text;
-    logEl.appendChild(el);
-    while (logEl.children.length > 120) logEl.removeChild(logEl.firstChild);
-    logEl.scrollTop = logEl.scrollHeight;
-}
-
-async function pickAndCopyStampworldPdfFile() {
-    const country = document.getElementById('countrySel').value;
-    if (!country) { appendStampworldCopyLog('Select a country first.'); return; }
-    const btn = document.getElementById('stampworldPickBtn');
-    const statusEl = document.getElementById('stampworldCopyStatus');
-    const logEl = document.getElementById('stampworldCopyLog');
-    if (btn) btn.disabled = true;
-    if (statusEl) { statusEl.className = 'colnectCopyStatus'; statusEl.style.display = ''; statusEl.textContent = 'Opening file picker\u2026'; }
-    if (logEl) logEl.style.display = '';
-    try {
-        const r = await fetch('/api/stampworld-import-file', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ country })
-        });
-        const j = await r.json();
-        if (j.ok && j.picked) {
-            if (statusEl) { statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 ' + j.message; }
-            appendStampworldCopyLog('\u2714 ' + j.message);
-            await refreshState();
-        } else if (j.ok && !j.picked) {
-            if (statusEl) statusEl.textContent = 'Cancelled';
-        } else {
-            if (statusEl) { statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 ' + (j.message || 'Failed'); }
-            appendStampworldCopyLog('\u2718 ' + (j.message || 'Failed'));
-        }
-    } catch (e) {
-        if (statusEl) { statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 Error: ' + e; }
-        appendStampworldCopyLog('Error: ' + e);
-    } finally {
-        if (btn) btn.disabled = false;
-    }
-}
-
-function appendStampworldCopyLog(text) {
-    const logEl = document.getElementById('stampworldCopyLog');
-    if (!logEl) return;
-    const el = document.createElement('div');
-    el.className = 'line';
-    el.textContent = new Date().toLocaleTimeString() + ' ' + text;
-    logEl.appendChild(el);
-    while (logEl.children.length > 120) logEl.removeChild(logEl.firstChild);
-    logEl.scrollTop = logEl.scrollHeight;
-}
-
-
-function revealColnectImportSection() {
-    const panel = document.getElementById('colnectCopyPanel');
-    if (!panel) return;
-    if (!panel.open) {
-        panel.setAttribute('open', '');
-        try { localStorage.setItem(colnectCopyPanelStorageKey, 'open'); } catch (_) {}
-    }
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    const summary = panel.querySelector('summary');
-    if (summary && typeof summary.focus === 'function') {
-        summary.focus();
-    }
 }
 
 async function refreshState() {
@@ -1445,50 +1319,17 @@ async function logoutApp() {
 }
 
 async function importColnectFiles() {
-    revealColnectImportSection();
     const sel = document.getElementById('countrySel');
-    const country = sel.value;
+    const country = sel?.value;
     const status = document.getElementById('status');
-    const statusBox = document.getElementById('colnectCopyStatus');
-    const logEl = document.getElementById('colnectCopyLog');
     
     if (!country) {
         if (status) status.innerText = 'Select a country first.';
-        if (statusBox) {
-            statusBox.className = 'colnectCopyStatus fail';
-            statusBox.textContent = 'Select a country first.';
-        }
         return;
     }
 
     if (status) status.innerText = 'Importing Colnect files for ' + country + '...';
     setBusy(true, 'Importing Colnect CSV files for ' + country + '...');
-    if (statusBox) {
-        statusBox.className = 'colnectCopyStatus';
-        statusBox.textContent = 'Starting import for ' + country + '...';
-    }
-    appendColnectCopyLog('--- import started for ' + country + ' ---');
-
-    let shownLogCount = 0;
-
-    async function pollImportLog() {
-        try {
-            const r = await fetch('/runtime-log', { cache: 'no-store' });
-            const j = await r.json();
-            const lines = j.lines || [];
-            const newLines = lines.slice(shownLogCount);
-            shownLogCount = lines.length;
-            for (const line of newLines) {
-                appendColnectCopyLog(line);
-                if (statusBox) {
-                    statusBox.className = 'colnectCopyStatus';
-                    statusBox.textContent = line;
-                }
-            }
-        } catch (_) {}
-    }
-
-    const logPollTimer = setInterval(pollImportLog, 700);
 
     try {
         const r = await fetch('/api/colnect-import', {
@@ -1497,53 +1338,24 @@ async function importColnectFiles() {
             body: JSON.stringify({ country })
         });
         const j = await r.json();
-        clearInterval(logPollTimer);
-        await pollImportLog();
         setBusy(false, '');
 
         if (j.ok && j.stamps_imported > 0) {
             const doneMsg = j.message || ('Imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)');
             if (status) status.innerText = doneMsg;
-            if (statusBox) {
-                statusBox.className = 'colnectCopyStatus ok';
-                statusBox.textContent = doneMsg;
-            }
-            appendColnectCopyLog('✔ ' + doneMsg);
             await refreshState();
         } else if (j.ok && j.stamps_imported === 0) {
             const msg = j.message || 'No stamps were imported.';
             const finalMsg = 'No stamps imported. ' + msg;
             if (status) status.innerText = finalMsg;
-            if (statusBox) {
-                statusBox.className = 'colnectCopyStatus';
-                statusBox.textContent = finalMsg;
-            }
-            appendColnectCopyLog(finalMsg);
-            if (j.errors && j.errors.length > 0) {
-                for (const err of j.errors) appendColnectCopyLog('! ' + err);
-            }
+            await refreshState();
         } else {
             const msg = j.message || 'Import failed';
-            const details = (j.errors && j.errors.length > 0)
-                ? '\n\nErrors:\n' + j.errors.join('\n')
-                : '';
             if (status) status.innerText = 'Import unavailable: ' + msg;
-            if (statusBox) {
-                statusBox.className = 'colnectCopyStatus fail';
-                statusBox.textContent = msg;
-            }
-            appendColnectCopyLog('✘ ' + msg);
-            if (details) appendColnectCopyLog(details.replace(/^\n+/, ''));
         }
     } catch (e) {
-        clearInterval(logPollTimer);
         setBusy(false, '');
-        if (status) status.innerText = 'Import error';
-        if (statusBox) {
-            statusBox.className = 'colnectCopyStatus fail';
-            statusBox.textContent = 'Import error: ' + e;
-        }
-        appendColnectCopyLog('Error: ' + e);
+        if (status) status.innerText = 'Import error: ' + e;
     }
 }
 
@@ -1602,34 +1414,39 @@ async function generateAlbumPdfNow() {
     }
 }
 
+function updateSwCmdDisplay(country) {
+    const el = document.getElementById('swCmd');
+    if (el) el.innerText = suggestedStampworldCommand(country);
+}
+
 document.getElementById('swStartYear')?.addEventListener('change', () => {
     persistStampWorldYearRange();
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+    const country = document.getElementById('countrySel')?.value;
+    updateSwCmdDisplay(country);
 });
 document.getElementById('swEndYear')?.addEventListener('change', () => {
     persistStampWorldYearRange();
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+    const country = document.getElementById('countrySel')?.value;
+    updateSwCmdDisplay(country);
 });
 document.getElementById('swCountry')?.addEventListener('input', () => {
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+    const country = document.getElementById('countrySel')?.value;
+    updateSwCmdDisplay(country);
 });
 document.getElementById('swCountryFixed')?.addEventListener('input', () => {
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+    const country = document.getElementById('countrySel')?.value;
+    updateSwCmdDisplay(country);
 });
 document.getElementById('swPreset')?.addEventListener('change', () => {
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+    const country = document.getElementById('countrySel')?.value;
+    updateSwCmdDisplay(country);
 });
 document.getElementById('swExtraFlags')?.addEventListener('input', () => {
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+    const country = document.getElementById('countrySel')?.value;
+    updateSwCmdDisplay(country);
 });
 
-document.getElementById('albumsRootPath').addEventListener('keydown', (ev) => {
+document.getElementById('albumsRootPath')?.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter') {
         ev.preventDefault();
         setAlbumsRootPath();

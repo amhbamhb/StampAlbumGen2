@@ -22,12 +22,11 @@
         <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
         <button class='primary' onclick='startReview()'>Open Review</button>
         <button class='btn-refresh' onclick='refreshState()'>Refresh</button>
-        <button class='btn-accounts' onclick='openSiteAccountsDialog()'>Site Accounts</button>
         <button class='btn-config' onclick='openConfigEditor()'>Edit Config</button>
         <button id='btnConfigStaleBadge' class='btn-config-stale' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;border-radius:4px;padding:6px 12px;cursor:pointer;' onclick='openConfigStalenessDialog()'>⚙️ New Settings Available</button>
         <button class='btn-pdf' onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
         <button class='btn-import' onclick='importColnectFiles()'>Import Colnect - User Created Files</button>
-        <a href='/help-manual.pdf' target='_blank' rel='noopener noreferrer' id='btnHelpManual' class='btn-help' title='Open Help Manual (PDF)' style='display:inline-flex;align-items:center;gap:4px;text-decoration:none;padding:7px 11px;border-radius:8px;border:1px solid #0284c7;background:#0284c7;color:#fff;font-weight:600;font-size:13px;cursor:pointer;box-sizing:border-box;'>❓ Help Manual</a>
+        <a href='/help-manual.pdf' target='_blank' rel='noopener noreferrer' id='btnHelpManual' class='btn-help' title='Open Help Manual (PDF)'>❓ Help Manual</a>
         <button id='btnUpdateBadge' class='btn-update' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;border-radius:4px;padding:6px 12px;cursor:pointer;' onclick='openUpdateDialog()'>✨ Update Available</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
     </div>
@@ -111,20 +110,6 @@
   
     <div id='countryPanel' class='panel'></div>
     {country_url_controls}
-    <details id='stampworldPanel' class='colnectCopyPanel collapsibleSection' open>
-        <summary><span class='introArrow'>&#9660;</span> Import StampWorld - PDF / HTML Files <span class='introDimTag'>click to expand / collapse</span></summary>
-        <div class='collapsibleSectionBody'>
-            <div class='row' style='margin-top:8px;'>
-                <button id='stampworldPickBtn' class='accent' onclick='pickAndCopyStampworldPdfFile()'>Browse &amp; Import StampWorld PDF/HTML File&#8230;</button>
-                <span id='stampworldCopyCountBadge' class='badge'>Files: 0</span>
-            </div>
-            <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
-                Destination: <code id='stampworldDirPath'>(select a country)</code>
-            </div>
-            <div id='stampworldCopyStatus' class='colnectCopyStatus'>Ready</div>
-            <div id='stampworldCopyLog' class='colnectCopyLog'></div>
-        </div>
-    </details>
 
     <details id='externalAlbumPanel' class='externalAlbumPanel collapsibleSection' open>
         <summary><span class='introArrow'>&#9660;</span> Import &amp; edit external AlbumEasy albums <span class='introDimTag'>click to expand / collapse</span></summary>
@@ -133,20 +118,6 @@
         </div>
     </details>
 
-    <details id='colnectCopyPanel' class='colnectCopyPanel collapsibleSection' open>
-        <summary><span class='introArrow'>&#9660;</span> Import Colnect - User Created Files <span class='introDimTag'>click to expand / collapse</span></summary>
-        <div class='collapsibleSectionBody'>
-            <div class='row' style='margin-top:8px;'>
-                <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>
-                <span id='colnectCopyCountBadge' class='badge'>Files: 0</span>
-            </div>
-            <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
-                Destination: <code id='colnectDirPath'>(select a country)</code>
-            </div>
-            <div id='colnectCopyStatus' class='colnectCopyStatus'>Ready</div>
-            <div id='colnectCopyLog' class='colnectCopyLog'></div>
-        </div>
-    </details>
     <div id='status' class='status'></div>
     {runtime_log_panel_html}
     <div id='loadingBox' class='loadingBox'>

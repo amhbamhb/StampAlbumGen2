@@ -27,18 +27,24 @@ p { margin: 0 0 10px 0; color: var(--muted-text); }
 .albumsRootStatus.fail { border-color: #e8b4b4; background: #fff3f3; color: #7a2020; }
 label { font-size: 13px; font-weight: 600; }
 select, input { padding: 7px 8px; border: 1px solid #bcd1e4; border-radius: 8px; min-width: 170px; }
-button { padding: 7px 11px; border-radius: 8px; border: 1px solid #bcd1e4; background: #fff; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease; }
-button.primary { background: var(--accent-main); color: #fff; border-color: var(--accent-main); }
-button.danger { background: var(--accent-danger); color: #fff; border-color: var(--accent-danger); }
+button { font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid #bcd1e4; background: #fff; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease; }
+button.primary { background: #1b629b; color: #fff; border-color: #154e7d; }
+button.primary:hover { background: #154e7d; border-color: #0f3d63; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(27, 98, 155, 0.28); }
+button.btn-refresh { background: #5a7082; color: #fff; border-color: #475a6a; }
+button.btn-refresh:hover { background: #485b6b; border-color: #374754; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(90, 112, 130, 0.25); }
+button.btn-config { background: #6d599f; color: #fff; border-color: #574681; }
+button.btn-config:hover { background: #5c498a; border-color: #49386e; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(109, 89, 159, 0.25); }
+button.btn-pdf { background: #c26522; color: #fff; border-color: #9d4f16; }
+button.btn-pdf:hover { background: #aa5416; border-color: #89400e; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(194, 101, 34, 0.28); }
+button.btn-import { background: #1e8557; color: #fff; border-color: #166944; }
+button.btn-import:hover { background: #166944; border-color: #105234; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(30, 133, 87, 0.25); }
+button.btn-help, a.btn-help { background: #0284c7; color: #fff; border-color: #0369a1; text-decoration: none; font-size: 13px; font-weight: 600; padding: 7px 11px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; }
+button.btn-help:hover, a.btn-help:hover { background: #0369a1; color: #fff; border-color: #025380; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(2, 132, 199, 0.25); }
+button.btn-create-theme { background: #0e7c7b; color: #fff; border-color: #095f5e; font-weight: 600; }
+button.btn-create-theme:hover { background: #0a6564; border-color: #064c4b; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(14, 124, 123, 0.25); }
+button.danger { background: #ad3d3d; color: #fff; border-color: #8e2f2f; }
+button.danger:hover { background: #923030; border-color: #742222; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(173, 61, 61, 0.25); }
 button.accent { background: #0f8a6b; color: #fff; border-color: #0f8a6b; }
-button.btn-refresh { background: #6a8faa; color: #fff; border-color: #557888; }
-button.btn-config { background: #7a68c0; color: #fff; border-color: #6554a8; }
-button.btn-pdf { background: #c87c28; color: #fff; border-color: #a8641a; }
-button.btn-import { background: #2da070; color: #fff; border-color: #228458; }
-button.btn-help, a.btn-help { background: #0284c7; color: #fff; border-color: #0369a1; text-decoration: none; }
-button.btn-help:hover, a.btn-help:hover { background: #0369a1; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(2, 132, 199, 0.25); }
-button.btn-create-theme { background: #107c6f; color: #fff; border-color: #0c6157; font-weight: 600; }
-button.btn-create-theme:hover { background: #0d685d; color: #fff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(16, 124, 111, 0.25); }
 button:hover { background: #edf6ff; color: #131d4d; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(21, 66, 95, 0.12); }
 code { background: #edf5fb; color: #131d4d; border: 1px solid #131d4d; border-radius: 6px; padding: 2px 6px; }
 .status { margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }

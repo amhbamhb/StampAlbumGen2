@@ -1,23 +1,19 @@
 // ==============================================================================
-// StampAlbumGen2 — Official Comprehensive User Manual & Command Catalog
+// Stamp Album Generator 2 — Official Help Manual & Command Catalog
+// Author: Laser Spider LLC
+// Pipeline: Automated Typst Vector PDF Engine
 // ==============================================================================
-
-#set document(
-  title: "StampAlbumGen2 Comprehensive User Manual & Command Catalog",
-  author: "Laser Spider LLC - Ray Tkatch",
-  date: auto
-)
 
 #set page(
   paper: "us-letter",
-  margin: (x: 20mm, top: 22mm, bottom: 22mm),
+  margin: (top: 25mm, bottom: 25mm, left: 22mm, right: 22mm),
   header: context {
     let page_num = counter(page).get().first()
-    if page_num > 2 [
+    if page_num > 1 [
       #grid(
         columns: (1fr, 1fr),
-        align(left)[#text(size: 8pt, fill: rgb("#667085"))[StampAlbumGen2 Collector's Guide & Command Catalog]],
-        align(right)[#text(size: 8pt, fill: rgb("#667085"))[Laser Spider LLC]]
+        align(left)[#text(size: 8pt, fill: rgb("#667085"), weight: "bold")[Stamp Album Generator 2 — User Manual]],
+        align(right)[#text(size: 8pt, fill: rgb("#667085"))[Laser Spider LLC]],
       )
       #v(-4pt)
       #line(length: 100%, stroke: 0.4pt + rgb("#D0D5DD"))
@@ -30,24 +26,38 @@
       #v(2pt)
       #grid(
         columns: (1fr, 1fr),
-        align(left)[#text(size: 8pt, fill: rgb("#667085"))[Official Website: stampalbumgenerator2.com]],
-        align(right)[#text(size: 8pt, fill: rgb("#667085"))[Page #counter(page).display("1")]]
+        align(left)[#text(
+          size: 8pt,
+          fill: rgb("#667085"),
+        )[Official Website: #link("https://stampalbumgenerator2.com")[stampalbumgenerator2.com]]],
+        align(right)[#text(size: 8pt, fill: rgb("#667085"))[Page #counter(page).display("1")]],
       )
     ]
-  }
+  },
 )
 
 #set text(
   font: ("Segoe UI", "Arial"),
   size: 10.5pt,
   fill: rgb("#1F2A37"),
-  lang: "en"
+  lang: "en",
 )
 
 #set par(
   justify: true,
-  leading: 0.65em
+  leading: 0.7em,
 )
+
+#show heading: it => [
+  #v(10pt)
+  #text(
+    font: ("Segoe UI", "Arial"),
+    fill: rgb("#1B365D"),
+    weight: "bold",
+    it.body,
+  )
+  #v(4pt)
+]
 
 // --- Cover Page ---
 #align(center + horizon)[
@@ -68,18 +78,30 @@
       ]
       #v(10pt)
       #line(length: 80%, stroke: 1pt + rgb("#CBD5E1"))
-      #v(10pt)
+      #v(8pt)
       #text(size: 10pt, fill: rgb("#475467"))[
         High-Resolution Vector PDF Album Generation for World Stamp Collections \
         Covering Both Legacy AlbumEasy (4.2.1 / 4.5.0) and Native Vector (`.stampalbum`) Standards
       ]
-      #v(16pt)
+      #v(8pt)
+      #block(
+        fill: rgb("#EFF8FF"),
+        stroke: 0.5pt + rgb("#B2DDFF"),
+        inset: (x: 10pt, y: 7pt),
+        radius: 4pt,
+        [
+          #text(size: 8.5pt, fill: rgb("#175CD3"), weight: "medium")[
+            ℹ️ *A Living, Active Collector's Manual:* This document is continuously expanded and updated in real time alongside each new Native-PDF layout engine feature, verified command family, and visual workflow enhancement.
+          ]
+        ],
+      )
+      #v(10pt)
       #text(size: 9pt, fill: rgb("#64748B"))[
-        Software Version 1.14+ | Document Edition: November 2026 \
-        Laser Spider LLC | https://stampalbumgenerator2.com
+        Software Version 1.15+ | Document Edition: November 2026 \
+        Laser Spider LLC | #link("https://stampalbumgenerator2.com")[https://stampalbumgenerator2.com]
       ]
       #v(6pt)
-    ]
+    ],
   )
 ]
 
@@ -91,7 +113,7 @@
 #outline(
   title: none,
   indent: 1.5em,
-  depth: 2
+  depth: 2,
 )
 
 // --- Modular Section Imports ---
