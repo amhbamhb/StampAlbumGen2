@@ -1,89 +1,81 @@
 // ==============================================================================
-// Section 5: Vector Page Geometry, Coordinate Systems & Mount Standards
+// Section 5: Technical Engine & Command Architecture
 // ==============================================================================
 
 #pagebreak()
-= 5. Vector Page Geometry, Coordinate Systems & Mount Standards
+= 5. Technical Engine & Command Architecture
 
-== 5.1 Coordinate Spaces & Dimensional Units
+StampAlbumGen2 is engineered from the ground up in high-performance Rust, combining a lightning-fast vector layout planner with an uncompromising, publication-grade native PDF renderer.
 
-Philatelic mounting demands absolute dimensional consistency. StampAlbumGen2 operates in exact millimetres ($"mm"$) internally and maps directly to the standard PostScript/PDF coordinate system (where 1 point = $1/72$ inch):
+Whether you generate albums through the point-and-click Review Screen or write AlbumEasy `.stampalbum` script files directly, this section details the precision mechanics, coordinate models, and command vocabulary powering the application.
 
-$ 1 "mm" = 72 / 25.4 "points" approx 2.83464567 "points" $
+== 5.1 Absolute Precision Geometry & Internal Coordinate Model
+
+Philatelic mounts require exact, millimeter-accurate positioning. Even a fraction of a millimeter error can cause mounts to buckle or crowd neighboring rows.
+
+To deliver uncompromising dimensional precision across platforms and print drivers:
+- *Internal Representation:* All lengths, coordinates, offsets, and clearances are represented internally as 64-bit floating-point millimetres (`f64`).
+- *PDF Coordinate Translation:* Dimensions are converted to Adobe PostScript / PDF points at output time using the exact standard philatelic conversion ratio:
+  $ 1 "pt" = 25.4 / 72 "mm" approx 0.3527777777777778 "mm" $
+  $ 1 "mm" = 72 / 25.4 "pt" approx 2.834645669291339 "pt" $
+- *Rounding Defense:* All line endings, corner radii, and perimeter offsets are snapped to $0.001 "mm"$ ($1 mu"m"$), eliminating cumulative rounding drift across long multi-column stamp arrays.
+
+== 5.2 Origin Coordinates & Box Placement Paradigms
+
+StampAlbumGen2 supports both the legacy AlbumEasy coordinate paradigm and the modern, auto-centering native layout engine.
 
 #table(
-  columns: (2fr, 2fr, 2fr),
-  fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
-  stroke: 0.5pt + rgb("#D0D5DD"),
-  table.header([*Paper Format*], [*Dimensions (mm)*], [*PDF MediaBox (points)*]),
-  [US Letter (Portrait)], [215.9 × 279.4 mm], [612.0 × 792.0 pt],
-  [US Letter (Landscape)], [279.4 × 215.9 mm], [792.0 × 612.0 pt],
-  [A4 (Portrait)], [210.0 × 297.0 mm], [595.28 × 841.89 pt],
-  [A4 (Landscape)], [297.0 × 210.0 mm], [841.89 × 595.28 pt],
+  columns: (1fr, 1.2fr, 2fr),
+  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#1B365D")) } else { 0.5pt + rgb("#E4E7EC") },
+  fill: (x, y) => if y == 0 { rgb("#F0F4F8") } else if calc.even(y) { rgb("#FAFAFA") } else { none },
+  inset: 7pt,
+  [*Coordinate Paradigm*], [*Origin Reference*], [*Typical Philatelic Application*],
+  [AlbumEasy Row Grid], [Bottom-left or top-left of row container], [Automated flowing catalogs where stamps are added sequentially with `STAMP_ADD`.],
+  [Explicit Cartesian (`STAMP_AT`)], [Top-left margin intersection], [Precision custom exhibits, souvenir sheets, and asymmetric cover displays.],
+  [Centered Mount Grid], [Horizontal center of usable printable area], [Balanced presentation pages with uniform left and right visual margins.],
 )
 
-== 5.2 Alternating Margins for Book-Binding (`ALBUM_PAGES_MARGINSE`)
+== 5.3 Stamp Frame Hierarchy & Mount Construction
 
-When printed pages are bound in classic philatelic ring binders (such as 3-ring, 4-ring, or springback albums), the binding edge requires an expanded margin clearance to prevent holes or binding posts from encroaching on stamp frames:
+A single stamp placement in StampAlbumGen2 consists of up to four concentric, mathematically aligned bounding frames:
 
-#grid(
-  columns: (1fr, 1fr),
-  gutter: 15pt,
+#enum(
   [
-    #block(fill: rgb("#F8F9FA"), inset: 10pt, radius: 4pt, stroke: 0.5pt + rgb("#D0D5DD"))[
-      *Odd Pages (Right-Hand Page)* \
-      - Left Margin: *25.0 mm* (Binding Edge) \
-      - Right Margin: *12.0 mm* (Outer Edge) \
-      - Top Margin: *18.0 mm* \
-      - Bottom Margin: *21.0 mm*
-    ]
+    *Outer Cut Perimeter:* The boundary where you cut the mount film. Controlled by mount clearance settings (default: stamp width + 3 mm, stamp height + 3 mm).
   ],
   [
-    #block(fill: rgb("#F8F9FA"), inset: 10pt, radius: 4pt, stroke: 0.5pt + rgb("#D0D5DD"))[
-      *Even Pages (Left-Hand Page)* \
-      - Left Margin: *12.0 mm* (Outer Edge) \
-      - Right Margin: *25.0 mm* (Binding Edge) \
-      - Top Margin: *18.0 mm* \
-      - Bottom Margin: *21.0 mm*
-    ]
-  ]
+    *Frame Border Line:* The solid, dashed, or colored vector stroke printed onto the album page. Can be customized with `NATIVE_STAMP_FRAME` (line width, color, corner radius).
+  ],
+  [
+    *Inner Accent Frame:* An optional secondary recessed or decorative inner border line, configured via `NATIVE_STAMP_INNER_FRAME`.
+  ],
+  [
+    *Stamp Paper Area:* The exact physical paper boundary of the original postage stamp.
+  ],
 )
 
-In native syntax, this alternating parity is declared in the document header (using `ALBUM_PAGES_MARGINS` or `NATIVE_PAGES_MARGINS`, and `ALBUM_PAGES_MARGINSE` or `NATIVE_PAGES_MARGINSE`):
-```
-ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)
-ALBUM_PAGES_MARGINSE (12.0 25.0 18.0 21.0)
-```
-
-== 5.3 Stamp Physical Dimensions vs. Mount Clearances
-
-A common error in stamp album design is drawing frames exactly the size of the stamp paper. Stamp mounts (such as Showgard or Hawid strips) require extra physical clearance around the stamp to ensure easy insertion and prevent damage to delicate perforations:
-
-- *Stamp Physical Dimensions ($W times H$):* The true physical measurement of the stamp paper (e.g., $40.0 times 25.0 "mm"$).
-- *Standard Mount Clearance:* Typically $+1.5 "mm"$ on all four sides ($+3.0 "mm"$ total width and height).
-- *Drawn Frame:* $43.0 times 28.0 "mm"$.
 - *Centering:* Stamp specimen images or text are positioned inside the frame according to the active `NATIVE_STAMP_IMAGE_POLICY`.
+- *Mount Padding:* Clearances are distributed symmetrically around the center axis, ensuring the printed frame always frames your stamp perfectly on all four sides.
 
-== 5.4 Concentric Page Border Framing (`ALBUM_PAGES_BORDER`)
+== 5.4 Page Border Mechanics & Multi-Line Framing Rules
 
-Page borders define the outer visual perimeter of an album exhibit, creating a distinguished framing boundary between the album margins and stamp content.
-
-The `ALBUM_PAGES_BORDER` command configures single, double, or triple concentric border frames:
+Album page borders provide visual structure and elegance. StampAlbumGen2 offers comprehensive support for single, double, and triple vector framing rules via `ALBUM_PAGES_BORDER (w_outer w_inner1 w_inner2 gap)`.
 
 #table(
-  columns: (2fr, 2.5fr, 3.5fr),
-  fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
-  stroke: 0.5pt + rgb("#D0D5DD"),
-  table.header([*Framing Style*], [*Command Syntax*], [*Collector Application*]),
-  [Classic Double-Line], [`ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)`], [Traditional philatelic standard: bold 0.5 mm outer border paired with a crisp 0.1 mm inner hairline.],
-  [Crisp Single-Line], [`ALBUM_PAGES_BORDER (0.25 0.0 0.0 1.25)`], [Clean, modern aesthetic ideal for colorful topical and modern commemorative issues.],
+  columns: (1.5fr, 2fr, 2.5fr),
+  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#1B365D")) } else { 0.5pt + rgb("#E4E7EC") },
+  fill: (x, y) => if y == 0 { rgb("#F0F4F8") } else if calc.even(y) { rgb("#FAFAFA") } else { none },
+  inset: 7pt,
+  [*Border Style*], [*Command Syntax*], [*Visual Character*],
+  [Classic Single Line], [`ALBUM_PAGES_BORDER (0.3 0.0 0.0 0.0)`], [Clean, understated 0.3 mm perimeter line. Standard for modern definitives.],
+  [Double-Line Framing], [`ALBUM_PAGES_BORDER (0.5 0.2 0.0 1.0)`], [Heavy 0.5 mm outer frame with a delicate 0.2 mm inner rule separated by 1 mm.],
   [Deluxe Triple-Line], [`ALBUM_PAGES_BORDER (0.1 0.5 0.2 1.25)`], [Ornate presentation framing with a prominent center accent for souvenir sheets and title pages.],
   [Recessed Inner Line], [`ALBUM_PAGES_BORDER (0.0 0.3 0.0 1.25)`], [Floating inset rule offset from the page margin bounds by the gap distance.],
   [Borderless / Omitted], [`ALBUM_PAGES_BORDER (0.0 0.0 0.0 0.0)`], [Disables border strokes entirely for modern full-bleed or minimalist page designs.],
 )
 
 === Automatic Content Inset Calculation
-The vector engine dynamically computes the total border occupancy inset ($\"occupancy\"_\"mm\"$) reserving spacing only for active border rules:
+The vector engine dynamically computes the total border occupancy inset ($"occupancy"_"mm"$) reserving spacing only for active border rules:
 $ "occupancy" = w_"outer" + sum_(i in {"inner"_1, "inner"_2}, w_i > 0) (w_i + "gap") $
 This mathematical guarantee ensures that title blocks, header captions, and stamp mounts never encroach upon or collide with page border strokes.
 
@@ -93,19 +85,33 @@ For commemorative presentation exhibits, historical classics, and luxury album l
 
 A decorative border is composed of high-resolution transparent vector or raster page ornaments positioned at page corners and along margin centers, connected by precision vector framing rules:
 
-```
-ALBUM_PAGES_DECORATIVE_BORDER ("borders/ImperialExhibition.txt")
-COLOUR_ALBUM_DECORATIVE_BORDER (navy)
-```
+- *Corner Ornaments (`IMAGE_CORNER`):* Placed at the top-left and automatically rotated / mirrored for top-right, bottom-right, and bottom-left.
+- *Edge Ornaments (`IMAGE_EDGE_TOP`, `IMAGE_EDGE_BOTTOM`, `IMAGE_EDGE_LEFT`, `IMAGE_EDGE_RIGHT`):* Centered along margins to create classic framed exhibits.
+- *Color Tinting (`COLOUR_ALBUM_DECORATIVE_BORDER`):* Re-tints black monochrome ornaments into any philatelic ink shade (such as dark navy, sepia, forest green, or burgundy) at render time.
 
-=== Decorative Border Definition Grammar
-Each border design is defined in a standalone `.txt` specification file containing these commands:
+== 5.6 Command Vocabulary Quick Reference
+
+The following table summarizes the most commonly used commands across the layout engine:
 
 #table(
-  columns: (2.5fr, 2fr, 3.5fr),
-  fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
-  stroke: 0.5pt + rgb("#D0D5DD"),
-  table.header([*Command*], [*Arguments*], [*Purpose & Geometry*]),
+  columns: (1.5fr, 1.2fr, 2.5fr),
+  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#1B365D")) } else { 0.5pt + rgb("#E4E7EC") },
+  fill: (x, y) => if y == 0 { rgb("#F0F4F8") } else if calc.even(y) { rgb("#FAFAFA") } else { none },
+  inset: 6pt,
+  [*Command*], [*Arguments*], [*Purpose & Philatelic Function*],
+  [`PAGE_START`], [—], [Begins a new album page and resets row cursors.],
+  [`ALBUM_PAGES_SIZE`], [`(width height)`], [Sets album page dimensions in mm (e.g. `(215.9 279.4)` for US Letter).],
+  [`ALBUM_PAGES_MARGINS`], [`(left right top bottom)`], [Sets printable area margins in millimetres.],
+  [`ALBUM_PAGES_BORDER`], [`(outer in1 in2 gap)`], [Configures single, double, or triple vector border rules.],
+  [`PAGE_TITLE`], [`(font size "text" gap)`], [Prints a centered page title block with spacing below.],
+  [`PAGE_HEADER`], [`(font size align "text" dx dy)`], [Places running header text at the top of the page.],
+  [`PAGE_FOOTER`], [`(font size align "text" dx dy)`], [Places running footer text at the bottom of the page.],
+  [`STAMP_ADD`], [`(width height "caption")`], [Appends a new stamp frame to the current active row.],
+  [`ROW_START`], [—], [Advances to the next vertical row on the page.],
+  [`ROW_ALIGN_BOTTOM`], [—], [Aligns stamps along their bottom baseline instead of top edge.],
+  [`NATIVE_STAMP_FRAME`], [`(width colour radius)`], [Customizes stamp border stroke width, color, and rounded corners.],
+  [`NATIVE_STAMP_INNER_FRAME`], [`(width colour gap)`], [Adds a recessed secondary inner accent line inside the stamp box.],
+  [`NATIVE_STAMP_IMAGE_POLICY`], [`(unit pad_x pad_y fit aspect col show)`], [Controls specimen stamp image scaling, padding, and grayscale conversion.],
   [`IMAGE_SCALE`], [`(factor)`], [Scales ornament graphics (e.g. `0.12` or `0.24` for 300/600 DPI scans at 72 DPI layout).],
   [`IMAGE_CORNER`], [`("filename.png")`], [Corner ornament PNG placed at the top-left; automatically rotated and mirrored for all 4 corners.],
   [`IMAGE_CORNER_PAD`], [`(dx dy)`], [Horizontal and vertical offsets in mm from corner margin intersections.],
@@ -114,81 +120,6 @@ Each border design is defined in a standalone `.txt` specification file containi
   [`IMAGE_EDGE_LEFT`], [`("filename.png")`], [Left margin ornament centered vertically. Flipped automatically when used for right.],
   [`IMAGE_EDGE_RIGHT`], [`("filename.png")`], [Distinct right margin ornament centered vertically.],
   [`IMAGE_EDGE_PAD`], [`(dx dy)`], [Shifts edge ornaments outward or inward relative to margin perimeters.],
-  [`BORDER_LINES`], [`(outer inner1 inner2 spacing)`], [Draws up to 3 vector framing rules connecting ornament positions.],
-  [`BORDER_PAD`], [`(dx dy)`], [Perpendicular offsets shifting border lines outward (+) or inward (-).],
-  [`BORDER_END_OFFSETS`], [`(dx dy)`], [Insets border line endpoints from corners to prevent overlapping corner ornaments.],
+  [`IMAGE_BORDER_PAD`], [`(pad)`], [Expands or contracts the enclosing frame line to fit decorative ornaments.],
+  [`COLOUR_ALBUM_DECORATIVE_BORDER`], [`(colour)`], [Applies a uniform philatelic ink tint to all page ornaments.],
 )
-
-=== Built-in Border Styles & Search Path Resolution
-When locating border definition files, the generator first searches the root `borders/` application library, followed by the folder containing the active album source document:
-
-- *Classic Victorian (`Classic.txt`):* Stately corner acanthus scroll vignettes framed by balanced double rules.
-- *Art Deco (`ArtDeco.txt`, `ArtDecoSmall.txt`):* Geometric stepped corner flourishes evoking 1920s–1930s design.
-- *Baroque Corner Vignettes (`CornerStyleA.txt`, `CornerStyleB.txt`):* Ornate scrolled flourishes for classical issues.
-- *Architectural Pillars (`CornerAndVerticalStyleC.txt`):* Stately fluted classical column rules along vertical margins.
-- *Imperial Exhibition (`ImperialExhibition.txt`):* Deluxe custom showcase border uniting corner palmettes, classical pillar side rules, and refined double hairline framing.
-
-=== Dynamic Per-Page Border Switching
-In multi-page documents, collectors can dynamically change or reset decorative borders and line framing on individual pages. Specifying `NATIVE_PAGE_DECORATIVE_BORDER ("border.def")` (or `ALBUM_PAGES_DECORATIVE_BORDER`) immediately after a `NATIVE_PAGE_BREAK ()` overrides the border for that page without affecting preceding pages:
-
-```
-NATIVE_PAGE_BREAK ()
-NATIVE_PAGE_DECORATIVE_BORDER ("borders/ImperialExhibition.txt")
-COLOUR_ALBUM_DECORATIVE_BORDER (navy)
-```
-
-== 5.6 Color Formats and Palettes (`color-formats-v1`)
-
-The native PDF engine features a universal color parser supporting all standard web and graphic color representations across album styling commands:
-
-#table(
-  columns: (2.5fr, 2.5fr, 4fr),
-  fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
-  stroke: 0.5pt + rgb("#D0D5DD"),
-  table.header([*Color Format*], [*Example Syntax*], [*Philatelic Collector Application*]),
-  [6-Digit Hexadecimal], [`#1E4A7A` or `"#1E4A7A"`], [Exact digital matching of national flag colors, ink shades, or museum specimens.],
-  [3-Digit Shorthand Hex], [`#F80` or `"#036"`], [Convenient shorthand expanding `#RGB` to `#RRGGBB` for high-contrast accents.],
-  [Bare Hex (No `#`)], [`1E4A7A` or `2E8B57`], [Direct hexadecimal notation without requiring a leading hash sign.],
-  [Functional Integer RGB], [`"rgb(30, 74, 122)"`], [Standard red, green, blue color components calibrated from 0 to 255.],
-  [Functional Percent RGB], [`"rgb(12%, 29%, 48%)"`], [Proportional color mixing from 0% to 100% for fine-tuned tonal tints.],
-  [SVG / CSS Named Colors], [`navy`, `forestgreen`, `crimson`], [Intuitive English color names for quick styling without looking up numbers.],
-)
-
-=== Universal Color Availability
-Every native styling command accepts any of these color formats interchangeably:
-- `COLOUR_ALBUM_BORDER (color)` or `COLOR_ALBUM_BORDER (color)`
-- `COLOUR_ALBUM_DECORATIVE_BORDER (color)`
-- `NATIVE_STAMP_FRAME (line_w color addition_mm)`
-- `NATIVE_STAMP_INNER_BORDER (pad_mm thickness_mm style color)`
-- `NATIVE_STAMP_HEADING (LOCAL|VA font size "text" offset baseline_gap color)`
-- `NATIVE_STAMP_FOOTER_TEXT (font size color "left" "centre" "right")`
-- `NATIVE_PAGE_HEADER_NUMBER (...)` and `NATIVE_PAGE_FOOTER_NUMBER (...)`
-- `NATIVE_PAGE_MARGIN_TEXT (...)`
-
-=== Strict Print-Safe Color Integrity
-Archival stamp album printing requires consistent, opaque vector ink rendering. Transparency (alpha channels such as `rgba(...)` or `#RRGGBBAA`), `transparent`, and `none` are strictly rejected at parse time with clear diagnostics to guarantee that printed pages never suffer from color-mixing artifacts or invisible borders.
-
-== 5.7 Page Breaks, Group Templates & Blank Pages (`page-start-v1`)
-
-Organizing stamps into logical sets and commemorative series requires precise control over page breaks and recurring page structures:
-
-=== Explicit Page Breaks (`PAGE_START` / `NATIVE_PAGE_BREAK`)
-An explicit page break terminates the current page, flushes any active stamp row, and begins a new clean sheet:
-- `PAGE_START` or `NATIVE_PAGE_START`: Standard zero-argument page break.
-- `NATIVE_PAGE_BREAK ([horizontal_mm vertical_mm])`: Page break with optional per-page stamp and row spacing overrides.
-- *Active Row Flushing:* Any active stamp row in progress is guaranteed to complete and render on the current page before the renderer advances to the next page.
-- *Layout Preservation:* Album borders, headers, and footer page numbers repeat automatically across every page.
-
-=== Reusable Page Templates (`PAGE_START_GROUP_BEGIN` / `PAGE_START_GROUP_END`)
-To eliminate repetitive page text, collectors can declare a template group once before pages begin:
-```
-PAGE_START_GROUP_BEGIN
-PAGE_TEXT_CENTRE (TB 11 $$1 5)
-PAGE_TEXT_CENTRE (HN 9 "Year: $$2" 5)
-PAGE_START_GROUP_END
-```
-Whenever `PAGE_START ("United States" 1959)` is invoked, `$$1` and `$$2` are dynamically replaced with the arguments for that specific page.
-
-=== Intentional Blank Pages
-Consecutive or leading page breaks (`NATIVE_PAGE_BREAK ()` or `PAGE_START`) gracefully generate blank bordered, numbered pages. This allows collectors to reserve facing pages for postal covers, first-day covers, or glassine interleaving sheets without layout errors.
-
