@@ -115,10 +115,10 @@ NATIVE_PAGE_BREAK (4.0 14.0)",
 #command_entry(
   "Variable Page Spacing (page-start-var-v1)",
   "Page Setup & Layout",
-  "PAGE_START_VAR (horizontal_mm vertical_mm)",
-  "Overrides spacing on a single target page without modifying global album defaults.",
-  "PAGE_START_VAR (6.0 12.0)",
-  "ALBUM_PAGES_SPACING (6.0 12.0)\nNATIVE_PAGE_BREAK ()",
+  "PAGE_START_VAR / NATIVE_PAGE_START_VAR (horizontal_mm vertical_mm)",
+  "Overrides horizontal stamp and vertical row spacing on a single target page without modifying global album defaults.",
+  "PAGE_START_VAR (12.0 6.0)\nPAGE_START_VAR (0.0 0.0)",
+  "NATIVE_PAGE_START_VAR (12.0 6.0)\nNATIVE_PAGE_BREAK (0.0 0.0)",
   thumb_name: "page-start-var-v1--album.png"
 )
 

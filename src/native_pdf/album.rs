@@ -782,8 +782,20 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
-                "NATIVE_PAGE_BREAK" | "NATIVE_PAGE_START" | "PAGE_START" => {
-                    if !matches!(args.len(), 0 | 2) {
+                "NATIVE_PAGE_BREAK"
+                | "NATIVE_PAGE_START"
+                | "PAGE_START"
+                | "NATIVE_PAGE_START_VAR"
+                | "PAGE_START_VAR" => {
+                    let is_var =
+                        matches!(name.as_str(), "PAGE_START_VAR" | "NATIVE_PAGE_START_VAR");
+                    if is_var {
+                        if args.len() != 2 {
+                            return Err(fail(format!(
+                                "{name} takes two spacing values (horizontal and vertical)"
+                            )));
+                        }
+                    } else if !matches!(args.len(), 0 | 2) {
                         return Err(fail(format!(
                             "{name} takes no arguments or two spacing values"
                         )));
