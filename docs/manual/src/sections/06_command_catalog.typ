@@ -153,10 +153,10 @@ NATIVE_PAGE_BREAK (4.0 14.0)",
 #command_entry(
   "Border Colors & Tints (border-colour-v1)",
   "Page Borders & Decorative Framing",
-  "COLOUR_ALBUM_BORDER (colour_name)",
-  "Applies named RGB colors or grayscale tints to page perimeter borders.",
+  "COLOUR_ALBUM_BORDER / COLOR_ALBUM_BORDER / NATIVE_PAGE_BORDER_COLOUR (colour)",
+  "Applies rich philatelic colors or subtle grayscale tints to page perimeter borders. Supports 6-digit hex (#RRGGBB), 3-digit shorthand hex (#RGB), rgb(), and SVG named colors. Can be applied globally or per-page following a page break.",
   "COLOUR_ALBUM_BORDER (darkblue)",
-  "COLOUR_ALBUM_BORDER (darkblue)",
+  "COLOUR_ALBUM_BORDER (#1B365D)\n# or per-page override:\nNATIVE_PAGE_BORDER_COLOUR (crimson)",
   thumb_name: "border-colour-v1--named.png",
 )
 

@@ -1,0 +1,60 @@
+STAMPALBUM 1
+# All-in-One Border Color & Tint Showcase (Native Vector Engine)
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (4.0 10.0)
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25 #1B365D)
+NATIVE_PAGE_TITLE (TB 15 "BORDER COLORS & TINTS - NATIVE VECTOR ENGINE" 8)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.25 black 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+# ==============================================================================
+# PAGE 1: Classic Deep Navy Blue Border (#1B365D)
+# ==============================================================================
+# Row 1
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino 1960 Archival Definitive - Classic Double Border in Navy")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand 1958 Commemorative - Precision Vector Framing")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta Historic Architecture Definitive - High Contrast Rule")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden King Gustav VI Adolf Definitive - Centered Placement")
+
+# ==============================================================================
+# PAGE 2: Imperial Crimson / Dark Red Border (#8B0000)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+ALBUM_PAGES_BORDER (0.1 0.5 0.2 1.25 #8B0000)
+# Row 1
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino 1960 Archival Definitive - Deluxe Triple Border in Crimson")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand 1958 Commemorative - Accentuated Middle Stroke")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta Historic Architecture Definitive - Exhibition Presentation")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden King Gustav VI Adolf Definitive - Archival Symmetry")
+
+# ==============================================================================
+# PAGE 3: Heritage Forest Green Border (#1C4D25)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+ALBUM_PAGES_BORDER (0.25 0.0 0.0 0.0 #1C4D25)
+# Row 1
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino 1960 Archival Definitive - Crisp Single Rule in Forest Green")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand 1958 Commemorative - Understated Modern Design")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta Historic Architecture Definitive - Natural Archival Tint")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden King Gustav VI Adolf Definitive - Clean Margins")
+
+# ==============================================================================
+# PAGE 4: Royal Amethyst Purple Border (#4B2E83)
+# ==============================================================================
+NATIVE_PAGE_BREAK ()
+ALBUM_PAGES_BORDER (0.0 0.3 0.0 1.25 #4B2E83)
+# Row 1
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino 1960 Archival Definitive - Recessed Inset Border in Royal Purple")
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand 1958 Commemorative - 1.25mm Margin Inset Channel")
+NATIVE_ROW_BREAK ()
+# Row 2
+STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta Historic Architecture Definitive - Elegant Color Accent")
+STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden King Gustav VI Adolf Definitive - Distinct Presentation")

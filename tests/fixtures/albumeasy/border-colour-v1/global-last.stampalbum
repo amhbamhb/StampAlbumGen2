@@ -1,0 +1,16 @@
+STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+ALBUM_PAGES_BORDER (0.1 0.5 0.2 1.25)
+COLOUR_ALBUM_BORDER (red)
+NATIVE_PAGE_TITLE (TB 15 "GLOBAL BORDER COLOR - PAGE 1 (RED)" 8)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black 2)
+NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
+
+STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino 1960 Archival Definitive with Red Border Framing")
+
+NATIVE_PAGE_BREAK ()
+COLOUR_ALBUM_BORDER (navy)
+STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand 1958 Special Commemorative with Navy Border Override")

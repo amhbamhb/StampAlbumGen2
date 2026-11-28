@@ -1,8 +1,8 @@
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use stamp_album_gen2::native_pdf::{
-    commands::colour::colour_album_border::AlbumBorderColour, config::NativePdfConfig, renderer,
-    units::points_to_mm,
+    album::NativeAlbum, albumeasy, commands::colour::colour_album_border::AlbumBorderColour,
+    config::NativePdfConfig, renderer, units::points_to_mm,
 };
 #[path = "support/native_pdf_proof.rs"]
 mod proof;
@@ -361,5 +361,88 @@ fn rendered_colours_match_reference_and_guide_stays_black() -> Result<()> {
     for path in paths {
         assert_eq!(path.attribute("color"), Some("0 0 0"));
     }
+    Ok(())
+}
+
+#[test]
+fn border_colour_individual_fixtures_render_native_and_raw_pdfs() -> Result<()> {
+    let cases = [
+        "default",
+        "named",
+        "alias",
+        "light-grey",
+        "white",
+        "global-last",
+        "hex",
+        "short-hex",
+        "unquoted-hex",
+    ];
+
+    for stem in cases {
+        let raw_path = root().join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = root().join(format!("{stem}-raw-native.pdf"));
+        let expected_pages = if stem == "global-last" { 2 } else { 1 };
+        let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, expected_pages, "{stem} raw-native page count");
+        let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+        assert_eq!(
+            doc_raw.page_count()?,
+            expected_pages as u32,
+            "{stem} raw-native doc count"
+        );
+
+        let native_path = root().join(format!("{stem}.stampalbum"));
+        let native_pdf = root().join(format!("{stem}-native.pdf"));
+        let album = NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(
+            native_pages.len(),
+            expected_pages,
+            "{stem} native page count"
+        );
+        let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+        assert_eq!(
+            doc_native.page_count()?,
+            expected_pages as u32,
+            "{stem} native doc count"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn border_colour_all_in_one_comparison_renders_four_clean_pages() -> Result<()> {
+    // 1. Raw-native rendering
+    let raw_path = root().join("all-in-one-compare-raw.stampalbum");
+    let raw_pdf = root().join("all-in-one-compare-raw-native.pdf");
+    let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+    assert_eq!(raw_pages, 4, "Raw-native must produce exactly 4 pages");
+    let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+    assert_eq!(doc_raw.page_count()?, 4);
+
+    // 2. Native vector rendering
+    let native_path = root().join("all-in-one-compare.stampalbum");
+    let native_pdf = root().join("all-in-one-compare-native.pdf");
+    let album = NativeAlbum::load(&native_path)?;
+    let native_pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(native_pages.len(), 4, "Native must produce exactly 4 pages");
+    let doc_native = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+    assert_eq!(doc_native.page_count()?, 4);
+
+    // 3. Verify US Letter dimensions for each page
+    for i in 0..4 {
+        let page = doc_native.get_page(i)?;
+        near(
+            points_to_mm(page.media_box[2] - page.media_box[0]),
+            215.9,
+            0.1,
+        );
+        near(
+            points_to_mm(page.media_box[3] - page.media_box[1]),
+            279.4,
+            0.1,
+        );
+    }
+
     Ok(())
 }
