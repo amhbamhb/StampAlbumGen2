@@ -1,0 +1,31 @@
+STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+COLOUR_ALBUM_BORDER (darkred)
+NATIVE_PAGE_TITLE (TB 16 "UNITED STATES - ZERO SPACING" 19)
+NATIVE_PAGE_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$" 0 0 black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.1 black 6)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+NATIVE_STAMP_HEADING_PADDING (0)
+
+# Page 1: Default H4 V14
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm physical\nFirst row - wide")
+NATIVE_STAMP_HEADING (LOCAL HN 9 "DEFAULT SPACING (PAGE 1)\nDefault: H 4mm / V 14mm | Year: 1959" 0 5 darkred)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm physical\nFirst row - portrait")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm physical\nSecond row - portrait")
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm physical\nSecond row - wide")
+
+# Page 2: Zero Override H0 V0
+NATIVE_PAGE_BREAK (0 0)
+COLOUR_ALBUM_BORDER (darkred)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm physical\nTouching boxes horizontally")
+NATIVE_STAMP_HEADING (LOCAL HN 9 "ZERO SPACING OVERRIDE (PAGE 2)\nZero: H 0mm / V 0mm | Year: 1961" 0 5 darkred)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm physical\nTouching boxes horizontally")
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm physical\nTouching rows vertically")
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm physical\nTouching rows vertically")

@@ -100,6 +100,7 @@ The following table summarizes the most commonly used commands across the layout
   inset: 6pt,
   [*Command*], [*Arguments*], [*Purpose & Philatelic Function*],
   [`PAGE_START`], [—], [Begins a new album page and resets row cursors.],
+  [`PAGE_START_VAR` / `NATIVE_PAGE_START_VAR`], [`(horizontal vertical)`], [Applies custom horizontal and vertical spacing strictly to the current page.],
   [`ALBUM_PAGES_SIZE`], [`(width height)`], [Sets album page dimensions in mm (e.g. `(215.9 279.4)` for US Letter).],
   [`ALBUM_PAGES_MARGINS`], [`(left right top bottom)`], [Sets printable area margins in millimetres.],
   [`ALBUM_PAGES_BORDER`], [`(outer in1 in2 gap)`], [Configures single, double, or triple vector border rules.],

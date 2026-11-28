@@ -346,7 +346,6 @@ fn section_numbering_preserves_override_and_reset_layouts() -> Result<(), String
 }
 
 #[test]
-#[ignore = "Regenerate PAGE_START_VAR native proofs after reference acceptance"]
 fn generate_page_start_var_proofs() -> Result<(), String> {
     let root = fixture();
     assert_eq!(
@@ -359,5 +358,123 @@ fn generate_page_start_var_proofs() -> Result<(), String> {
         &root.join("album-raw-native.pdf"),
     )?;
     NativeAlbum::load(&root.join("album.stampalbum"))?.write_pdf(&root.join("album-native.pdf"))?;
+
+    // override variation (2 pages)
+    albumeasy::render_file(
+        &root.join("override-raw.stampalbum"),
+        &root.join("override-raw-native.pdf"),
+    )?;
+    NativeAlbum::load(&root.join("override.stampalbum"))?
+        .write_pdf(&root.join("override-native.pdf"))?;
+
+    // zero variation (2 pages)
+    albumeasy::render_file(
+        &root.join("zero-raw.stampalbum"),
+        &root.join("zero-raw-native.pdf"),
+    )?;
+    NativeAlbum::load(&root.join("zero.stampalbum"))?.write_pdf(&root.join("zero-native.pdf"))?;
+
+    // horizontal variation (3 pages)
+    albumeasy::render_file(
+        &root.join("horizontal-raw.stampalbum"),
+        &root.join("horizontal-raw-native.pdf"),
+    )?;
+    NativeAlbum::load(&root.join("horizontal.stampalbum"))?
+        .write_pdf(&root.join("horizontal-native.pdf"))?;
+
+    // all-in-one comprehensive showcase (7 pages)
+    albumeasy::render_file(
+        &root.join("all-in-one-compare-raw.stampalbum"),
+        &root.join("all-in-one-compare-raw-native.pdf"),
+    )?;
+    NativeAlbum::load(&root.join("all-in-one-compare.stampalbum"))?
+        .write_pdf(&root.join("all-in-one-compare-native.pdf"))?;
+
+    // Verify page counts
+    let doc_album = PdfDocument::open(root.join("album-native.pdf")).map_err(|e| e.to_string())?;
+    assert_eq!(doc_album.page_count().map_err(|e| e.to_string())?, 4);
+
+    let doc_override =
+        PdfDocument::open(root.join("override-native.pdf")).map_err(|e| e.to_string())?;
+    assert_eq!(doc_override.page_count().map_err(|e| e.to_string())?, 2);
+
+    let doc_zero = PdfDocument::open(root.join("zero-native.pdf")).map_err(|e| e.to_string())?;
+    assert_eq!(doc_zero.page_count().map_err(|e| e.to_string())?, 2);
+
+    let doc_h = PdfDocument::open(root.join("horizontal-native.pdf")).map_err(|e| e.to_string())?;
+    assert_eq!(doc_h.page_count().map_err(|e| e.to_string())?, 3);
+
+    let doc_aio =
+        PdfDocument::open(root.join("all-in-one-compare-native.pdf")).map_err(|e| e.to_string())?;
+    assert_eq!(doc_aio.page_count().map_err(|e| e.to_string())?, 7);
+
+    Ok(())
+}
+
+#[test]
+fn native_page_start_var_aliases() -> Result<(), String> {
+    let temporary = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let img150 = fixture().join("../stamp-pagination-v1/us-150.png");
+    let img151 = fixture().join("../stamp-pagination-v1/us-151.png");
+    let img152 = fixture().join("../stamp-pagination-v1/us-152.png");
+    let img150_str = img150.to_str().ok_or("Invalid path")?;
+    let img151_str = img151.to_str().ok_or("Invalid path")?;
+    let img152_str = img152.to_str().ok_or("Invalid path")?;
+
+    // 1. NATIVE_PAGE_START_VAR in native album mode
+    let native_source = format!(
+        r#"STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.1 black 6)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+STAMP_IMAGE ("{img150_str}" 52 29 0.05078125 "HN" 8 "PAGE 1")
+NATIVE_PAGE_START_VAR (10 20)
+STAMP_IMAGE ("{img151_str}" 26 29 0.0534979424 "HN" 8 "PAGE 2")
+PAGE_START_VAR (5 10)
+STAMP_IMAGE ("{img152_str}" 26 29 0.052 "HN" 8 "PAGE 3")
+"#
+    );
+
+    let native_file = temporary.path().join("aliases-native.stampalbum");
+    fs::write(&native_file, native_source).map_err(|e| e.to_string())?;
+    let native_pdf = temporary.path().join("aliases-native.pdf");
+    let album = NativeAlbum::load(&native_file)?;
+    let pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(pages.len(), 3);
+    let doc = PdfDocument::open(&native_pdf).map_err(|e| e.to_string())?;
+    assert_eq!(doc.page_count().map_err(|e| e.to_string())?, 3);
+
+    // 2. NATIVE_PAGE_START_VAR in raw AlbumEasy mode
+    let raw_source = format!(
+        r#"ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+
+PAGE_START
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "{img150_str}" "" "PAGE 1" "")
+
+NATIVE_PAGE_START_VAR (12 6)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "{img151_str}" "" "PAGE 2" "")
+"#
+    );
+
+    let raw_file = temporary.path().join("aliases-raw.stampalbum");
+    fs::write(&raw_file, raw_source).map_err(|e| e.to_string())?;
+    let raw_pdf = temporary.path().join("aliases-raw.pdf");
+    let count = albumeasy::render_file(&raw_file, &raw_pdf)?;
+    assert_eq!(count, 2);
+    let doc_raw = PdfDocument::open(&raw_pdf).map_err(|e| e.to_string())?;
+    assert_eq!(doc_raw.page_count().map_err(|e| e.to_string())?, 2);
+
     Ok(())
 }
