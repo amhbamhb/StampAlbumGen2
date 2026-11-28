@@ -344,3 +344,73 @@ fn border_all_in_one_comparison_renders_four_clean_pages() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn native_page_border_aliases_and_colours() -> Result<()> {
+    let temporary = tempfile::tempdir()?;
+    let img_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/albumeasy/spacing-v1/images/san-marino.jpg");
+    let img_str = img_path.to_str().ok_or("Invalid path")?;
+
+    // 1. NativeAlbum test with NATIVE_PAGES_BORDER and NATIVE_PAGE_BORDER with inline colour and per-page border commands
+    let native_source = format!(
+        r#"STAMPALBUM 1
+NATIVE_PAGES_SIZE (215.9 279.4)
+NATIVE_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+NATIVE_PAGES_BORDER (0.5 0.1 0.0 1.25 #1B365D)
+NATIVE_ROW_ALIGNMENT (left)
+NATIVE_STAMP_FRAME (0.25 black 2)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+STAMP_IMAGE ("{img_str}" 35.0 26.0 0.175 "HN" 8 "PAGE 1")
+
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_BORDER (0.1 0.5 0.2 1.25 darkred)
+STAMP_IMAGE ("{img_str}" 35.0 26.0 0.175 "HN" 8 "PAGE 2")
+
+NATIVE_PAGE_BREAK ()
+NATIVE_PAGE_BORDER (0.25 0.0 0.0 0.0)
+NATIVE_PAGE_BORDER_COLOUR (#2C5E3B)
+STAMP_IMAGE ("{img_str}" 35.0 26.0 0.175 "HN" 8 "PAGE 3")
+"#
+    );
+
+    let native_file = temporary.path().join("aliases-native.stampalbum");
+    fs::write(&native_file, native_source)?;
+    let native_pdf = temporary.path().join("aliases-native.pdf");
+    let album = NativeAlbum::load(&native_file)?;
+    let pages = album.write_pdf(&native_pdf)?;
+    assert_eq!(pages.len(), 3);
+    let doc = oxidize_pdf::parser::PdfDocument::open(&native_pdf)?;
+    assert_eq!(doc.page_count()?, 3);
+
+    // 2. Raw AlbumEasy mode with NATIVE_PAGE_BORDER and NATIVE_PAGE_BORDER_COLOUR
+    let raw_source = format!(
+        r#"ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+NATIVE_PAGES_BORDER (0.5 0.1 1.25 #1B365D)
+
+PAGE_START
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (35 26 "{img_str}" "" "PAGE 1" "")
+
+PAGE_START
+NATIVE_PAGE_BORDER (0.25 0 0 0 darkgreen)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (35 26 "{img_str}" "" "PAGE 2" "")
+"#
+    );
+
+    let raw_file = temporary.path().join("aliases-raw.stampalbum");
+    fs::write(&raw_file, raw_source)?;
+    let raw_pdf = temporary.path().join("aliases-raw.pdf");
+    let count = albumeasy::render_file(&raw_file, &raw_pdf)?;
+    assert_eq!(count, 2);
+    let doc_raw = oxidize_pdf::parser::PdfDocument::open(&raw_pdf)?;
+    assert_eq!(doc_raw.page_count()?, 2);
+
+    Ok(())
+}

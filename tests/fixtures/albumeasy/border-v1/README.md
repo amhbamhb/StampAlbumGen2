@@ -52,12 +52,20 @@ Each variation is authored in AlbumEasy TXT syntax (for authentic AlbumEasy v4.5
 
 ## Technical Command Specifications
 
-### 1. AlbumEasy Command: `ALBUM_PAGES_BORDER`
+### 1. AlbumEasy & Native Commands: `ALBUM_PAGES_BORDER`, `NATIVE_PAGES_BORDER`, `NATIVE_PAGE_BORDER`
 ```text
-ALBUM_PAGES_BORDER (outer middle inner gap)
-# or legacy 3-parameter syntax:
-ALBUM_PAGES_BORDER (outer inner gap)
+ALBUM_PAGES_BORDER (outer middle inner gap [colour])
+ALBUM_PAGES_BORDER (outer inner gap [colour])
+NATIVE_PAGES_BORDER (outer middle inner gap [colour])
+NATIVE_PAGE_BORDER (outer middle inner gap [colour])
 ```
+- **Native Aliases**: `NATIVE_PAGES_BORDER` and `NATIVE_PAGE_BORDER` provide full syntax parity with `ALBUM_PAGES_BORDER`.
+- **Optional Colour Parameter**: Accepts an optional trailing colour argument supporting all standard formats:
+  - 6-digit hex (`#1B365D` or bare `1B365D`)
+  - 3-digit shorthand hex (`#F80` or bare `F80`)
+  - Functional integer/percentage RGB (`rgb(27, 54, 93)`)
+  - SVG / CSS named colours (`navy`, `darkred`, `forestgreen`, `midnightblue`, etc.)
+- **Dedicated Colour Commands**: `COLOUR_ALBUM_BORDER`, `COLOR_ALBUM_BORDER`, `NATIVE_PAGES_BORDER_COLOUR`, `NATIVE_PAGE_BORDER_COLOUR`, `NATIVE_BORDER_COLOUR` allow changing border color globally or per-page.
 - **`outer`**: Stroke width (in millimeters) of the outermost border rectangle.
 - **`middle`**: Stroke width (in millimeters) of the intermediate concentric rectangle (4-arg syntax only).
 - **`inner`**: Stroke width (in millimeters) of the innermost rectangle. In 3-arg legacy syntax, this maps to the second stroke with `middle = 0.0`.

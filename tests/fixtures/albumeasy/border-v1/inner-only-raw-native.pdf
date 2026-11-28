@@ -120,8 +120,8 @@ stream
       <dc:creator>Stamp Album Generator 2</dc:creator>
       <dc:description>Stamp Album - Country Album</dc:description>
       <xmp:CreatorTool>Stamp Album Generator 2</xmp:CreatorTool>
-      <xmp:CreateDate>2026-11-24T01:57:49.441036489+00:00</xmp:CreateDate>
-      <xmp:ModifyDate>2026-11-24T01:57:49.441083439+00:00</xmp:ModifyDate>
+      <xmp:CreateDate>2026-11-28T13:27:43.663180801+00:00</xmp:CreateDate>
+      <xmp:ModifyDate>2026-11-28T13:27:43.663216230+00:00</xmp:ModifyDate>
       <pdf:Producer>Stamp Album Generator 2</pdf:Producer>
     </rdf:Description>
   </rdf:RDF>
@@ -139,10 +139,10 @@ endobj
 3 0 obj
 <<
 /Author (Stamp Album Generator 2)
-/CreationDate (D:20261124015749+00'00)
+/CreationDate (D:20261128132743+00'00)
 /Creator (Stamp Album Generator 2)
 /Keywords (stamps, stamp album gen 2)
-/ModDate (D:20261124015749+00'00)
+/ModDate (D:20261128132743+00'00)
 /Producer (Stamp Album Generator 2)
 /Subject (Stamp Album - Country Album)
 /Title (Stamp Album)

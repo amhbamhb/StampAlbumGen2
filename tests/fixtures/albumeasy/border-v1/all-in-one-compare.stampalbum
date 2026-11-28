@@ -3,15 +3,14 @@ STAMPALBUM 1
 ALBUM_PAGES_SIZE (215.9 279.4)
 ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
 ALBUM_PAGES_SPACING (4.0 10.0)
-ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25)
-COLOUR_ALBUM_BORDER (black)
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.25 #1B365D)
 NATIVE_PAGE_TITLE (TB 15 "PAGE BORDER STYLES - NATIVE VECTOR ENGINE" 8)
 NATIVE_ROW_ALIGNMENT (left)
 NATIVE_STAMP_FRAME (0.25 black 2)
 NATIVE_STAMP_TEXT_POLICY (expand_footprint percent 140 2.0 1.0 2.5)
 
 # ==============================================================================
-# PAGE 1: Standard Double Border (0.5mm Outer, 0.1mm Inner, 1.25mm Gap)
+# PAGE 1: Standard Double Border (0.5mm Outer, 0.1mm Inner, 1.25mm Gap - Navy)
 # ==============================================================================
 # Row 1
 STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
@@ -22,9 +21,10 @@ STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
 STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")
 
 # ==============================================================================
-# PAGE 2: Triple Line Border (0.1mm Outer, 0.5mm Middle, 0.2mm Inner, 1.25mm Gap)
+# PAGE 2: Triple Line Border (0.1mm Outer, 0.5mm Middle, 0.2mm Inner, 1.25mm Gap - Crimson)
 # ==============================================================================
 NATIVE_PAGE_BREAK ()
+ALBUM_PAGES_BORDER (0.1 0.5 0.2 1.25 #8B0000)
 # Row 1
 STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
 STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")
@@ -34,9 +34,10 @@ STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
 STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")
 
 # ==============================================================================
-# PAGE 3: Single Line Border (0.25mm Stroke)
+# PAGE 3: Single Line Border (0.25mm Stroke - Forest Green)
 # ==============================================================================
 NATIVE_PAGE_BREAK ()
+ALBUM_PAGES_BORDER (0.25 0.0 0.0 0.0 #1C4D25)
 # Row 1
 STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
 STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")
@@ -46,9 +47,10 @@ STAMP_IMAGE ("../spacing-v1/images/malta.jpg" 22.0 34.0 0.155 "HN" 8 "Malta")
 STAMP_IMAGE ("../spacing-v1/images/sweden.jpg" 23.0 27.0 0.164 "HN" 8 "Sweden")
 
 # ==============================================================================
-# PAGE 4: Inner-Only / Offset Line Border (0.3mm Stroke, 1.25mm Inset Gap)
+# PAGE 4: Inner-Only / Offset Line Border (0.3mm Stroke, 1.25mm Inset Gap - Purple)
 # ==============================================================================
 NATIVE_PAGE_BREAK ()
+ALBUM_PAGES_BORDER (0.0 0.3 0.0 1.25 #4B2E83)
 # Row 1
 STAMP_IMAGE ("../spacing-v1/images/san-marino.jpg" 35.0 26.0 0.175 "HN" 8 "San Marino")
 STAMP_IMAGE ("../spacing-v1/images/new-zealand.jpg" 36.0 22.0 0.162 "HN" 8 "New Zealand")

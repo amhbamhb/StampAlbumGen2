@@ -199,29 +199,69 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
-                "ALBUM_PAGES_BORDER" => {
-                    if !matches!(args.len(), 3 | 4) {
-                        return Err(fail(
-                            "ALBUM_PAGES_BORDER requires three or four numeric arguments".into(),
-                        ));
+                "ALBUM_PAGES_BORDER" | "NATIVE_PAGES_BORDER" | "NATIVE_PAGE_BORDER" => {
+                    if !matches!(args.len(), 3..=5) {
+                        return Err(fail(format!(
+                            "{name} requires three to five arguments (3 or 4 dimensions and optional colour)"
+                        )));
                     }
-                    let parsed =
-                        PageBorder::parse(&numbers(&name, &args, args.len()).map_err(&fail)?)
-                            .map_err(&fail)?;
+                    let (border_nums, border_col) = match args.len() {
+                        3 => {
+                            let nums = numbers(&name, &args, 3).map_err(&fail)?;
+                            (nums, None)
+                        }
+                        4 => {
+                            if !args[3].quoted
+                                && !args[3].value.starts_with('#')
+                                && args[3].value.parse::<f64>().is_ok()
+                            {
+                                let nums = numbers(&name, &args, 4).map_err(&fail)?;
+                                (nums, None)
+                            } else {
+                                let nums = numbers(&name, &args[0..3], 3).map_err(&fail)?;
+                                let colour_val = &args[3].value;
+                                let parsed_col = AlbumBorderColour::parse(&[colour_val.as_str()])
+                                    .map_err(&fail)?;
+                                (nums, Some(parsed_col))
+                            }
+                        }
+                        5 => {
+                            let nums = numbers(&name, &args[0..4], 4).map_err(&fail)?;
+                            let colour_val = &args[4].value;
+                            let parsed_col =
+                                AlbumBorderColour::parse(&[colour_val.as_str()]).map_err(&fail)?;
+                            (nums, Some(parsed_col))
+                        }
+                        _ => unreachable!(),
+                    };
+                    let parsed = PageBorder::parse(&border_nums).map_err(&fail)?;
                     if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
                         pb.border = Some(parsed);
+                        if let Some(col) = border_col {
+                            pb.border_colour = Some(col);
+                        }
                     } else if border.is_some() {
                         return Err(fail(format!("Duplicate {name} command")));
                     } else {
                         border = Some(parsed);
+                        if let Some(col) = border_col {
+                            border_colour = Some(col);
+                        }
                     }
                 }
-                "COLOUR_ALBUM_BORDER" | "COLOR_ALBUM_BORDER" => {
+                "COLOUR_ALBUM_BORDER"
+                | "COLOR_ALBUM_BORDER"
+                | "NATIVE_PAGES_BORDER_COLOUR"
+                | "NATIVE_PAGES_BORDER_COLOR"
+                | "NATIVE_PAGE_BORDER_COLOUR"
+                | "NATIVE_PAGE_BORDER_COLOR"
+                | "NATIVE_BORDER_COLOUR"
+                | "NATIVE_BORDER_COLOR" => {
                     let colour = words(&name, &args, 1)
                         .map_err(&fail)?
                         .into_iter()
                         .next()
-                        .ok_or_else(|| fail(format!("{name} requires one named colour")))?;
+                        .ok_or_else(|| fail(format!("{name} requires one colour argument")))?;
                     let parsed = AlbumBorderColour::parse(&[&colour]).map_err(&fail)?;
                     if let Some(pb) = page_breaks.last_mut().filter(|_| !image_specs.is_empty()) {
                         pb.border_colour = Some(parsed);

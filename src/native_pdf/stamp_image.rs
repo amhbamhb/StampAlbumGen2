@@ -444,10 +444,11 @@ pub(crate) struct PreparedStampText {
 }
 
 fn contains(outer: Bounds, inner: Bounds) -> bool {
-    inner.left >= outer.left
-        && inner.bottom >= outer.bottom
-        && inner.right <= outer.right
-        && inner.top <= outer.top
+    const EPSILON: f64 = 1e-4;
+    inner.left >= outer.left - EPSILON
+        && inner.bottom >= outer.bottom - EPSILON
+        && inner.right <= outer.right + EPSILON
+        && inner.top <= outer.top + EPSILON
 }
 
 fn position_text(

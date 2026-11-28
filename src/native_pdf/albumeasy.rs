@@ -112,6 +112,8 @@ fn supported(name: &str) -> bool {
             | "NATIVE_PAGES_CROP_MARKS"
             | "NATIVE_PAGE_CROP_MARKS"
             | "ALBUM_PAGES_BORDER"
+            | "NATIVE_PAGES_BORDER"
+            | "NATIVE_PAGE_BORDER"
             | "ALBUM_PAGES_DECORATIVE_BORDER"
             | "COLOR_ALBUM_DECORATIVE_BORDER"
             | "COLOUR_ALBUM_DECORATIVE_BORDER"
@@ -129,6 +131,12 @@ fn supported(name: &str) -> bool {
             | "COLOUR_ALBUM_MARGIN_TXT"
             | "COLOR_ALBUM_BORDER"
             | "COLOUR_ALBUM_BORDER"
+            | "NATIVE_PAGES_BORDER_COLOUR"
+            | "NATIVE_PAGES_BORDER_COLOR"
+            | "NATIVE_PAGE_BORDER_COLOUR"
+            | "NATIVE_PAGE_BORDER_COLOR"
+            | "NATIVE_BORDER_COLOUR"
+            | "NATIVE_BORDER_COLOR"
             | "COLOR_ALBUM_HEADER"
             | "COLOUR_ALBUM_HEADER"
             | "COLOR_ALBUM_TITLE"
@@ -819,15 +827,32 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     count(c, 2, 2)?;
                     spacing = Some(Spacing::parse(&[n(c, 0)?, n(c, 1)?])?);
                 }
-                "ALBUM_PAGES_BORDER" => {
-                    count(c, 3, 4)?;
-                    border = Some(PageBorder::parse(
-                        &c.args
-                            .iter()
-                            .enumerate()
-                            .map(|(i, _)| n(c, i))
-                            .collect::<Result<Vec<_>>>()?,
-                    )?);
+                "ALBUM_PAGES_BORDER" | "NATIVE_PAGES_BORDER" | "NATIVE_PAGE_BORDER" => {
+                    count(c, 3, 5)?;
+                    let (border_nums, col_opt) = match c.args.len() {
+                        3 => (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?], None),
+                        4 => {
+                            if !c.args[3].quoted
+                                && !c.args[3].value.starts_with('#')
+                                && c.args[3].value.parse::<f64>().is_ok()
+                            {
+                                (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?], None)
+                            } else {
+                                let col = AlbumBorderColour::parse(&[&c.args[3].value])?;
+                                (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?], Some(col))
+                            }
+                        }
+                        5 => {
+                            let col = AlbumBorderColour::parse(&[&c.args[4].value])?;
+                            (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?], Some(col))
+                        }
+                        _ => unreachable!(),
+                    };
+                    border = Some(PageBorder::parse(&border_nums)?);
+                    if let Some(col) = col_opt {
+                        border_colour = col.named();
+                        border_colour_name = c.args.last().unwrap().value.clone();
+                    }
                 }
                 "ALBUM_PAGES_DECORATIVE_BORDER" => {
                     count(c, 1, 1)?;
@@ -848,7 +873,14 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     crop_marks = AlbumPagesCropMarks::parse_command_args(&arg_strs)?;
                 }
 
-                "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
+                "COLOR_ALBUM_BORDER"
+                | "COLOUR_ALBUM_BORDER"
+                | "NATIVE_PAGES_BORDER_COLOUR"
+                | "NATIVE_PAGES_BORDER_COLOR"
+                | "NATIVE_PAGE_BORDER_COLOUR"
+                | "NATIVE_PAGE_BORDER_COLOR"
+                | "NATIVE_BORDER_COLOUR"
+                | "NATIVE_BORDER_COLOR" => {
                     count(c, 1, 1)?;
                     border_colour = NamedColour::parse(&c.args[0].value)?;
                     border_colour_name = c.args[0].value.clone();
@@ -1241,7 +1273,57 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         _ => heading_colour = colour,
                     }
                 }
-                "COLOR_ALBUM_BORDER" | "COLOUR_ALBUM_BORDER" => {
+                "ALBUM_PAGES_BORDER" | "NATIVE_PAGES_BORDER" | "NATIVE_PAGE_BORDER" => {
+                    count(c, 3, 5)?;
+                    let (border_nums, col_opt) = match c.args.len() {
+                        3 => (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?], None),
+                        4 => {
+                            if !c.args[3].quoted
+                                && !c.args[3].value.starts_with('#')
+                                && c.args[3].value.parse::<f64>().is_ok()
+                            {
+                                (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?], None)
+                            } else {
+                                let col = AlbumBorderColour::parse(&[&c.args[3].value])?;
+                                (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?], Some(col))
+                            }
+                        }
+                        5 => {
+                            let col = AlbumBorderColour::parse(&[&c.args[4].value])?;
+                            (vec![n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?], Some(col))
+                        }
+                        _ => unreachable!(),
+                    };
+                    let parsed = PageBorder::parse(&border_nums)?;
+                    page_settings.set_border(parsed);
+                    if let Some(col) = col_opt {
+                        current_border_colour = col;
+                        page_settings.set_border_colour(col);
+                    }
+                    if let Some(page) = pages.last_mut() {
+                        let margin_bounds = page.layout.margin_bounds;
+                        page.layout.border_strokes = page_settings
+                            .border()
+                            .strokes(margin_bounds)?
+                            .into_iter()
+                            .map(|stroke| {
+                                (
+                                    stroke.bounds,
+                                    stroke.width_mm,
+                                    page_settings.border_line_colour(stroke.line).rgb(),
+                                )
+                            })
+                            .collect();
+                    }
+                }
+                "COLOR_ALBUM_BORDER"
+                | "COLOUR_ALBUM_BORDER"
+                | "NATIVE_PAGES_BORDER_COLOUR"
+                | "NATIVE_PAGES_BORDER_COLOR"
+                | "NATIVE_PAGE_BORDER_COLOUR"
+                | "NATIVE_PAGE_BORDER_COLOR"
+                | "NATIVE_BORDER_COLOUR"
+                | "NATIVE_BORDER_COLOR" => {
                     count(c, 1, 1)?;
                     let parsed = AlbumBorderColour::parse(&[&c.args[0].value])?;
                     current_border_colour = parsed;
